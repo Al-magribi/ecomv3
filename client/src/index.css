@@ -1,0 +1,16 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+.product-card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+.product-card-hover:hover {
+  transform: scale(1.01); /* Membesar 5% */
+  z-index: 10; /* Agar kartu tampil di atas elemen lain saat membesar */
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important; /* Bayangan lebih tebal */
+}
