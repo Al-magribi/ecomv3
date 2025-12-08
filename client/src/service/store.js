@@ -8,6 +8,7 @@ import { ApiCategory } from "./product/ApiCategory";
 import { ApiAddress } from "./address/ApiAddress";
 import { ApiOrder } from "./order/ApiOrder";
 import { ApiCart } from "./cart/ApiCart";
+import { ApiReport } from "./reports/ApiReport";
 
 const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ const store = configureStore({
     [ApiAddress.reducerPath]: ApiAddress.reducer,
     [ApiOrder.reducerPath]: ApiOrder.reducer,
     [ApiCart.reducerPath]: ApiCart.reducer,
+    [ApiReport.reducerPath]: ApiReport.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -30,6 +32,7 @@ const store = configureStore({
       ApiAddress.middleware,
       ApiOrder.middleware,
       ApiCart.middleware,
+      ApiReport.middleware,
     ]),
   devTools: import.meta.env.VITE_MODE === "dev" ? true : false,
 });

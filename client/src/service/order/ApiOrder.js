@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { ApiCart } from "../cart/ApiCart";
 
 export const ApiOrder = createApi({
   reducerPath: "ApiOrder",
@@ -44,6 +45,15 @@ export const ApiOrder = createApi({
         body,
       }),
       invalidatesTags: ["Order"],
+
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(ApiCart.util.invalidateTags(["Cart"]));
+        } catch (error) {
+          console.log(error);
+        }
+      },
     }),
     updateOrderStatus: builder.mutation({
       query: ({ inv, status, method }) => ({

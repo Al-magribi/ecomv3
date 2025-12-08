@@ -125,11 +125,11 @@ const Cart = () => {
 
   if (isLoading) {
     return (
-      <div className='d-flex flex-column min-vh-100 bg-light'>
+      <div className="d-flex flex-column min-vh-100 bg-light">
         <Header />
-        <div className='container mt-5 text-center'>
-          <div className='spinner-border text-primary' role='status'>
-            <span className='visually-hidden'>Loading...</span>
+        <div className="container mt-5 text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
           </div>
         </div>
 
@@ -140,10 +140,10 @@ const Cart = () => {
 
   if (isError) {
     return (
-      <div className='d-flex flex-column min-vh-100 bg-light'>
+      <div className="d-flex flex-column min-vh-100 bg-light">
         <Header />
-        <div className='container mt-5'>
-          <div className='alert alert-danger'>
+        <div className="container mt-5">
+          <div className="alert alert-danger">
             Gagal memuat keranjang belanja.
           </div>
         </div>
@@ -155,16 +155,16 @@ const Cart = () => {
 
   if (!cartItems || cartItems.length === 0) {
     return (
-      <div className='d-flex flex-column min-vh-100 bg-light'>
+      <div className="d-flex flex-column min-vh-100 bg-light">
         <Header />
-        <div className='container mt-5 text-center'>
-          <div className='card shadow-sm p-5'>
-            <i className='bi bi-cart-x display-1 text-muted mb-3'></i>
+        <div className="container mt-5 text-center">
+          <div className="card shadow-sm p-5">
+            <i className="bi bi-cart-x display-1 text-muted mb-3"></i>
             <h3>Keranjang Anda Kosong</h3>
-            <p className='text-muted'>
+            <p className="text-muted">
               Yuk mulai belanja barang-barang menarik!
             </p>
-            <a href='/' className='btn btn-primary mt-3'>
+            <a href="/" className="btn btn-primary mt-3">
               Mulai Belanja
             </a>
           </div>
@@ -180,26 +180,26 @@ const Cart = () => {
     cartItems.length > 0 && selectedItems.length === cartItems.length;
 
   return (
-    <div className='d-flex flex-column min-vh-100 bg-light'>
+    <div className="d-flex flex-column min-vh-100 bg-light">
       <Header />
-      <div className='container py-3'>
-        <h2 className='mb-4 fw-bold'>Keranjang Belanja</h2>
+      <div className="container py-3">
+        <h2 className="mb-4 fw-bold">Keranjang Belanja</h2>
 
-        <div className='row'>
+        <div className="row">
           {/* Kolom Kiri: List Items */}
-          <div className='col-lg-8'>
-            <div className='card shadow-sm border-0'>
-              <div className='card-body p-0'>
-                <div className='table-responsive'>
-                  <table className='table align-middle mb-0'>
-                    <thead className='bg-light'>
+          <div className="col-lg-8">
+            <div className="card shadow-sm border-0">
+              <div className="card-body p-0">
+                <div className="table-responsive">
+                  <table className="table align-middle mb-0">
+                    <thead className="bg-light">
                       <tr>
                         {/* CHECKBOX PILIH SEMUA */}
-                        <th className='ps-4' style={{ width: "50px" }}>
-                          <div className='form-check'>
+                        <th className="ps-4" style={{ width: "50px" }}>
+                          <div className="form-check">
                             <input
-                              className='form-check-input'
-                              type='checkbox'
+                              className="form-check-input"
+                              type="checkbox"
                               checked={isAllSelected}
                               onChange={handleSelectAll}
                               style={{ cursor: "pointer" }}
@@ -207,9 +207,9 @@ const Cart = () => {
                           </div>
                         </th>
                         <th>Produk</th>
-                        <th className='text-center'>Harga</th>
-                        <th className='text-center'>Jumlah</th>
-                        <th className='text-end pe-4'>Subtotal</th>
+                        <th className="text-center">Harga</th>
+                        <th className="text-center">Jumlah</th>
+                        <th className="text-end pe-4">Subtotal</th>
                         <th></th>
                       </tr>
                     </thead>
@@ -217,11 +217,11 @@ const Cart = () => {
                       {cartItems.map((item) => (
                         <tr key={item.cart_id}>
                           {/* CHECKBOX PER ITEM */}
-                          <td className='ps-4'>
-                            <div className='form-check'>
+                          <td className="ps-4">
+                            <div className="form-check">
                               <input
-                                className='form-check-input'
-                                type='checkbox'
+                                className="form-check-input"
+                                type="checkbox"
                                 checked={selectedItems.includes(item.cart_id)}
                                 onChange={() => handleSelectItem(item.cart_id)}
                                 style={{ cursor: "pointer" }}
@@ -230,15 +230,15 @@ const Cart = () => {
                           </td>
 
                           {/* Info Produk */}
-                          <td className='py-3'>
-                            <div className='d-flex align-items-center'>
+                          <td className="py-3">
+                            <div className="d-flex align-items-center">
                               <img
                                 src={
                                   item.image_url ||
                                   "https://dummyimage.com/100x100/ccc/fff"
                                 }
                                 alt={item.product_name}
-                                className='rounded me-3'
+                                className="rounded me-3"
                                 style={{
                                   width: "60px",
                                   height: "60px",
@@ -246,15 +246,15 @@ const Cart = () => {
                                 }}
                               />
                               <div>
-                                <p className='mb-0 fw-bold text-dark'>
+                                <p className="mb-0 fw-bold text-dark">
                                   {item.product_name}
                                 </p>
                                 {item.variant_name && (
-                                  <small className='text-muted badge bg-light text-dark border'>
+                                  <small className="text-muted badge bg-light text-dark border">
                                     {item.variant_name}
                                   </small>
                                 )}
-                                <div className='small text-muted mt-1'>
+                                <div className="small text-muted mt-1">
                                   Stok: {item.available_stock}
                                 </div>
                               </div>
@@ -262,18 +262,18 @@ const Cart = () => {
                           </td>
 
                           {/* Harga Satuan */}
-                          <td className='text-center'>
+                          <td className="text-center">
                             {formatRupiah(item.final_price)}
                           </td>
 
                           {/* Input Qty */}
                           <td
-                            className='text-center'
+                            className="text-center"
                             style={{ minWidth: "120px" }}
                           >
-                            <div className='input-group input-group-sm justify-content-center'>
+                            <div className="input-group input-group-sm justify-content-center">
                               <button
-                                className='btn btn-outline-secondary'
+                                className="btn btn-outline-secondary"
                                 onClick={() =>
                                   handleQtyChange(item, item.quantity - 1)
                                 }
@@ -281,11 +281,11 @@ const Cart = () => {
                               >
                                 -
                               </button>
-                              <span className='input-group-text px-3 bg-white'>
+                              <span className="input-group-text px-3 bg-white">
                                 {item.quantity}
                               </span>
                               <button
-                                className='btn btn-outline-secondary'
+                                className="btn btn-outline-secondary"
                                 onClick={() =>
                                   handleQtyChange(item, item.quantity + 1)
                                 }
@@ -297,18 +297,18 @@ const Cart = () => {
                           </td>
 
                           {/* Subtotal */}
-                          <td className='text-end pe-4 fw-bold'>
+                          <td className="text-end pe-4 fw-bold">
                             {formatRupiah(item.final_price * item.quantity)}
                           </td>
 
                           {/* Tombol Hapus */}
-                          <td className='text-end'>
+                          <td className="text-end">
                             <button
-                              className='btn btn-link text-danger p-0 me-3'
+                              className="btn btn-link text-danger p-0 me-3"
                               onClick={() => handleDelete(item.cart_id)}
-                              title='Hapus'
+                              title="Hapus"
                             >
-                              <i className='bi bi-trash'></i>
+                              <i className="bi bi-trash"></i>
                             </button>
                           </td>
                         </tr>
@@ -321,41 +321,41 @@ const Cart = () => {
           </div>
 
           {/* Kolom Kanan: Ringkasan Belanja */}
-          <div className='col-lg-4 mt-4 mt-lg-0'>
+          <div className="col-lg-4 mt-4 mt-lg-0">
             <div
-              className='card shadow-sm border-0 sticky-top'
+              className="card shadow-sm border-0 sticky-top z-2"
               style={{ top: "20px" }}
             >
-              <div className='card-body'>
-                <h5 className='card-title fw-bold mb-4'>Ringkasan Belanja</h5>
+              <div className="card-body">
+                <h5 className="card-title fw-bold mb-4">Ringkasan Belanja</h5>
 
-                <div className='d-flex justify-content-between mb-3'>
-                  <span className='text-muted'>Total Item Terpilih</span>
-                  <span className='fw-bold text-dark'>
+                <div className="d-flex justify-content-between mb-3">
+                  <span className="text-muted">Total Item Terpilih</span>
+                  <span className="fw-bold text-dark">
                     {selectedItems.length} Barang
                   </span>
                 </div>
 
                 <hr />
 
-                <div className='d-flex justify-content-between mb-4'>
-                  <span className='fw-bold'>Total Harga</span>
-                  <span className='fw-bold text-primary fs-5'>
+                <div className="d-flex justify-content-between mb-4">
+                  <span className="fw-bold">Total Harga</span>
+                  <span className="fw-bold text-primary fs-5">
                     {formatRupiah(grandTotal || 0)}
                   </span>
                 </div>
 
                 <button
-                  className='btn btn-primary w-100 py-2 fw-bold shadow-sm'
+                  className="btn btn-primary w-100 py-2 fw-bold shadow-sm"
                   onClick={handleCheckout}
                   disabled={selectedItems.length === 0} // Disable jika tidak ada yg dipilih
                 >
                   Checkout ({selectedItems.length})
                 </button>
 
-                <div className='mt-3 text-center'>
-                  <small className='text-muted'>
-                    <i className='bi bi-shield-check'></i> Transaksi Aman &
+                <div className="mt-3 text-center">
+                  <small className="text-muted">
+                    <i className="bi bi-shield-check"></i> Transaksi Aman &
                     Terpercaya
                   </small>
                 </div>

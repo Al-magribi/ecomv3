@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { ApiAuth } from "../auth/ApiAuth";
 
 export const ApiAddress = createApi({
   reducerPath: "ApiAddress",
@@ -37,6 +38,16 @@ export const ApiAddress = createApi({
         body,
       }),
       invalidatesTags: ["Address"],
+
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+
+          dispatch(ApiAuth.util.invalidateTags(["Auth"]));
+        } catch (error) {
+          console.log(error);
+        }
+      },
     }),
     deleteAddress: builder.mutation({
       query: (id) => ({

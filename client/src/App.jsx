@@ -15,6 +15,10 @@ import Order from "./module/user/order/Order";
 import Cart from "./module/user/cart/Cart";
 import Checkout from "./module/home/components/checkout/Checkout";
 import Status from "./module/user/order/Status";
+import Dashboard from "./module/admin/dashboard/Dashboard";
+import Products from "./module/admin/products/Products";
+import Orders from "./module/admin/orders/Orders";
+import Reports from "./module/admin/reports/Reports";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -69,22 +73,28 @@ const App = () => {
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingScreen />}>
-        <ToastContainer position='top-left' />
+        <ToastContainer position="top-left" />
         <Routes>
-          <Route path='*' element={<Home />} />
-          <Route path='/' element={<Home />} />
-          <Route path='/signup' element={<Signup />} />
-          <Route path='/activation/:code' element={<Activation />} />
-          <Route path='/signin' element={<Signin />} />
-          <Route path='/profile' element={<Profile />} />
+          <Route path="*" element={<Home />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/activation/:code" element={<Activation />} />
+          <Route path="/signin" element={<Signin />} />
+
+          {/* Admin */}
+          <Route path="/admin-dashboard" element={<Dashboard />} />
+          <Route path="/admin-products" element={<Products />} />
+          <Route path="/admin-orders" element={<Orders />} />
+          <Route path="/admin-reports" element={<Reports />} />
 
           {/* User */}
-          <Route path='/orders' element={<Order />} />
-          <Route path='/order/status/:inv' element={<Status />} />
-          <Route path='/cart' element={<Cart />} />
+          <Route path="/orders" element={<Order />} />
+          <Route path="/order/status/:inv" element={<Status />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
 
-          {/* Checkout */}
-          <Route path='/checkout' element={<Checkout />} />
+          {/* User & Admin */}
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

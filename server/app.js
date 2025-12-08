@@ -14,6 +14,7 @@ import RouterCategory from "./router/product/RouterCategory.js";
 import RouterAddress from "./router/address/RouterAddress.js";
 import RouterOrder from "./router/order/RouterOrder.js";
 import RouterCart from "./router/cart/RouterCart.js";
+import RouterReport from "./router/report/RouterReport.js";
 
 const app = express();
 const server = createServer(app);
@@ -45,6 +46,7 @@ app.use("/api/category", RouterCategory);
 app.use("/api/address", RouterAddress);
 app.use("/api/order", RouterOrder);
 app.use("/api/cart", RouterCart);
+app.use("/api/report", RouterReport);
 
 io.use(socketAuth);
 

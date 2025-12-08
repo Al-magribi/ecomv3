@@ -29,7 +29,8 @@ const Checkout = () => {
   // --- API MUTATION ---
   const [createOrder, { isLoading: isCreatingOrder }] =
     useCreateOrderMutation();
-  const [updateOrderStatus] = useUpdateOrderStatusMutation();
+  const [updateOrderStatus, { isSuccess: updateSuccess }] =
+    useUpdateOrderStatusMutation();
 
   // --- LOCAL STATE ---
   const [checkoutItems, setCheckoutItems] = useState([]);
@@ -47,6 +48,11 @@ const Checkout = () => {
     undefined,
     { skip: location.state?.source === "direct" }
   );
+
+  // EFFECT: REDIRECT AFTER PAYMENT
+  const handleRedirect = (url) => {
+    navigate(url, { replace: true });
+  };
 
   // --- EFFECT: LOAD SNAP SCRIPT (FIXED) ---
   useEffect(() => {
@@ -147,24 +153,31 @@ const Checkout = () => {
       if (response.token && window.snap) {
         window.snap.pay(response.token, {
           onSuccess: function (result) {
-            localStorage.setItem("result", JSON.stringify(result));
             updateOrderStatus({
               inv: result.order_id,
               status: "completed",
               method: result.payment_type || "unknown",
             });
+
+            handleRedirect(result.finish_redirect_url);
           },
           onPending: function (result) {
-            localStorage.setItem("result", JSON.stringify(result));
             updateOrderStatus({
               inv: result.order_id,
               status: "pending",
               method: result.payment_type || "unknown",
             });
+
+            handleRedirect(result.finish_redirect_url);
           },
           onError: function (result) {
-            console.error("Payment Error:", result);
-            alert("Pembayaran gagal atau dibatalkan.");
+            updateOrderStatus({
+              inv: result.order_id,
+              status: result.transaction_status || "failed",
+              method: result.payment_type || "unknown",
+            });
+
+            handleRedirect(result.finish_redirect_url);
           },
           onClose: function () {
             alert(
@@ -187,20 +200,20 @@ const Checkout = () => {
 
   if (isCartLoading || isConfigLoading) {
     return (
-      <div className='container mt-5 text-center'>
-        <div className='spinner-border text-primary'></div>
-        <p className='mt-2'>Memuat data...</p>
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary"></div>
+        <p className="mt-2">Memuat data...</p>
       </div>
     );
   }
 
   return (
-    <div className='d-flex flex-column min-vh-100 bg-light'>
+    <div className="d-flex flex-column min-vh-100 bg-light">
       <Header />
-      <div className='container py-4'>
-        <h2 className='mb-4 fw-bold'>Pengiriman & Pembayaran</h2>
-        <div className='row g-4'>
-          <div className='col-lg-8'>
+      <div className="container py-4">
+        <h2 className="mb-4 fw-bold">Pengiriman & Pembayaran</h2>
+        <div className="row g-4">
+          <div className="col-lg-8">
             <AddressSection activeAddress={activeAddress} />
             <OrderItems items={checkoutItems} formatRupiah={formatRupiah} />
             <ShippingMethod
@@ -211,23 +224,23 @@ const Checkout = () => {
             />
           </div>
 
-          <div className='col-lg-4'>
+          <div className="col-lg-4">
             <div
-              className='card shadow-sm border-0 sticky-top z-3'
+              className="card shadow-sm border-0 sticky-top z-3"
               style={{ top: "20px" }}
             >
-              <div className='card-header bg-white py-3'>
-                <h5 className='mb-0 fw-bold'>Ringkasan Belanja</h5>
+              <div className="card-header bg-white py-3">
+                <h5 className="mb-0 fw-bold">Ringkasan Belanja</h5>
               </div>
-              <div className='card-body'>
-                <div className='d-flex justify-content-between mb-2'>
-                  <span className='text-muted'>
+              <div className="card-body">
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-muted">
                     Total Harga ({checkoutItems.length} barang)
                   </span>
                   <span>{formatRupiah(subTotal)}</span>
                 </div>
-                <div className='d-flex justify-content-between mb-3'>
-                  <span className='text-muted'>Total Ongkos Kirim</span>
+                <div className="d-flex justify-content-between mb-3">
+                  <span className="text-muted">Total Ongkos Kirim</span>
                   <span
                     className={
                       shippingFee > 0 ? "text-dark fw-bold" : "text-danger"
@@ -238,7 +251,7 @@ const Checkout = () => {
                 </div>
 
                 {selectedService && (
-                  <div className='d-flex justify-content-between mb-3 small text-muted'>
+                  <div className="d-flex justify-content-between mb-3 small text-muted">
                     <span>Estimasi Tiba</span>
                     <span>{selectedService.etd} Hari</span>
                   </div>
@@ -246,15 +259,15 @@ const Checkout = () => {
 
                 <hr style={{ borderStyle: "dashed" }} />
 
-                <div className='d-flex justify-content-between mb-4 align-items-center'>
-                  <span className='fw-bold fs-5'>Total Tagihan</span>
-                  <span className='fw-bold fs-4 text-primary'>
+                <div className="d-flex justify-content-between mb-4 align-items-center">
+                  <span className="fw-bold fs-5">Total Tagihan</span>
+                  <span className="fw-bold fs-4 text-primary">
                     {formatRupiah(grandTotal)}
                   </span>
                 </div>
 
                 <button
-                  className='btn btn-primary w-100 py-3 fw-bold shadow'
+                  className="btn btn-primary w-100 py-3 fw-bold shadow"
                   onClick={handlePayment}
                   disabled={
                     !selectedCourier ||
@@ -265,7 +278,7 @@ const Checkout = () => {
                 >
                   {isCreatingOrder ? (
                     <>
-                      <span className='spinner-border spinner-border-sm me-2'></span>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
                       Memproses...
                     </>
                   ) : (

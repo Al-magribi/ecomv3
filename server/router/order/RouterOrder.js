@@ -518,10 +518,6 @@ router.post(
           country_code: "IDN",
         },
       },
-      callbacks: {
-        finish: `${domain}/order/status/${invoiceNumber}`,
-        pending: `${domain}/order/status/${invoiceNumber}`,
-      },
     };
 
     const authString = Buffer.from(serverKey + ":").toString("base64");
