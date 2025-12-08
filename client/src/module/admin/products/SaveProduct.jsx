@@ -126,42 +126,48 @@ const SaveProduct = ({ productId, onBack }) => {
     form.capital > 0 ? ((profit / form.capital) * 100).toFixed(1) : 0;
 
   if (productId && isLoadingData) {
-    return <div className="text-center p-5">Memuat data produk...</div>;
+    return <div className='text-center p-5'>Memuat data produk...</div>;
   }
 
   return (
-    <div className="fade-in">
+    <div className='fade-in'>
       {/* Header */}
-      <div className="d-flex align-items-center justify-content-between mb-4">
-        <div className="d-flex align-items-center">
-          <button className="btn btn-outline-secondary me-3" onClick={onBack}>
-            <i className="bi bi-arrow-left me-2"></i>Kembali
+      <div className='d-flex align-items-center justify-content-between mb-4'>
+        <div className='d-flex align-items-center'>
+          <button
+            className='btn btn-outline-secondary me-3 flex-shrink-0'
+            onClick={onBack}
+          >
+            <i className='bi bi-arrow-left me-md-2'></i>
+            {/* Tampilkan teks 'Kembali' hanya di layar sm ke atas */}
+            <span className='d-none d-sm-inline'>Kembali</span>
           </button>
-          <h4 className="mb-0 fw-bold">
+
+          <h4 className='mb-0 fw-bold'>
             {productId ? "Edit Produk" : "Tambah Produk Baru"}
           </h4>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <div className="row g-4">
+      <form onSubmit={handleSubmit} encType='multipart/form-data'>
+        <div className='row g-4'>
           {/* KOLOM KIRI: Informasi Dasar */}
-          <div className="col-lg-8">
-            <div className="card border-0 shadow-sm mb-4">
-              <div className="card-header bg-white fw-bold py-3">
+          <div className='col-lg-8'>
+            <div className='card border-0 shadow-sm mb-4'>
+              <div className='card-header bg-white fw-bold py-3'>
                 Informasi Produk
               </div>
-              <div className="card-body">
+              <div className='card-body'>
                 {/* Nama Produk */}
-                <div className="mb-3">
-                  <label className="form-label">
-                    Nama Produk <span className="text-danger">*</span>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    Nama Produk <span className='text-danger'>*</span>
                   </label>
                   <input
-                    type="text"
-                    className="form-control"
-                    name="name"
-                    placeholder="Contoh: Kemeja Flannel Kotak"
+                    type='text'
+                    className='form-control'
+                    name='name'
+                    placeholder='Contoh: Kemeja Flannel Kotak'
                     value={form.name}
                     onChange={handleChange}
                     required
@@ -169,18 +175,18 @@ const SaveProduct = ({ productId, onBack }) => {
                 </div>
 
                 {/* Kategori */}
-                <div className="mb-3">
-                  <label className="form-label">
-                    Kategori <span className="text-danger">*</span>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    Kategori <span className='text-danger'>*</span>
                   </label>
                   <select
-                    className="form-select"
-                    name="category_id"
+                    className='form-select'
+                    name='category_id'
                     value={form.category_id}
                     onChange={handleChange}
                     required
                   >
-                    <option value="">Pilih Kategori</option>
+                    <option value=''>Pilih Kategori</option>
                     {categoriesData?.categories?.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -190,43 +196,43 @@ const SaveProduct = ({ productId, onBack }) => {
                 </div>
 
                 {/* Deskripsi */}
-                <div className="mb-3">
-                  <label className="form-label">Deskripsi</label>
+                <div className='mb-3'>
+                  <label className='form-label'>Deskripsi</label>
                   <textarea
-                    className="form-control"
-                    rows="5"
-                    name="description"
-                    placeholder="Jelaskan spesifikasi produk..."
+                    className='form-control'
+                    rows='5'
+                    name='description'
+                    placeholder='Jelaskan spesifikasi produk...'
                     value={form.description}
                     onChange={handleChange}
                   ></textarea>
                 </div>
 
                 {/* Upload Gambar */}
-                <div className="mb-3">
-                  <label className="form-label">Gambar Produk</label>
+                <div className='mb-3'>
+                  <label className='form-label'>Gambar Produk</label>
                   <input
-                    type="file"
-                    className="form-control"
-                    accept="image/*"
+                    type='file'
+                    className='form-control'
+                    accept='image/*'
                     multiple
                     onChange={handleFileChange}
                   />
-                  <small className="text-muted">
+                  <small className='text-muted'>
                     Bisa memilih lebih dari 1 gambar sekaligus.
                   </small>
 
                   {/* Preview Area */}
-                  <div className="d-flex gap-2 mt-3 overflow-auto">
+                  <div className='d-flex gap-2 mt-3 overflow-auto'>
                     {/* Gambar Existing (Edit Mode) */}
                     {existingImages.map((img) => (
-                      <div key={img.id} className="position-relative">
+                      <div key={img.id} className='position-relative'>
                         <img
                           src={img.link}
-                          alt="Existing"
-                          className="rounded border"
-                          width="80"
-                          height="80"
+                          alt='Existing'
+                          className='rounded border'
+                          width='80'
+                          height='80'
                           style={{ objectFit: "cover", opacity: 0.7 }}
                         />
                         {/* Note: Menghapus gambar existing butuh endpoint API khusus jika ingin realtime, 
@@ -236,18 +242,18 @@ const SaveProduct = ({ productId, onBack }) => {
 
                     {/* Gambar Baru (Upload) */}
                     {previews.map((src, idx) => (
-                      <div key={idx} className="position-relative">
+                      <div key={idx} className='position-relative'>
                         <img
                           src={src}
-                          alt="Preview"
-                          className="rounded border border-primary"
-                          width="80"
-                          height="80"
+                          alt='Preview'
+                          className='rounded border border-primary'
+                          width='80'
+                          height='80'
                           style={{ objectFit: "cover" }}
                         />
                         <button
-                          type="button"
-                          className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 rounded-circle"
+                          type='button'
+                          className='btn btn-danger btn-sm position-absolute top-0 end-0 p-0 rounded-circle'
                           style={{
                             width: "20px",
                             height: "20px",
@@ -266,34 +272,34 @@ const SaveProduct = ({ productId, onBack }) => {
           </div>
 
           {/* KOLOM KANAN: Harga & Inventaris */}
-          <div className="col-lg-4">
+          <div className='col-lg-4'>
             {/* Harga & Modal */}
-            <div className="card border-0 shadow-sm mb-4">
-              <div className="card-header bg-white fw-bold py-3">
+            <div className='card border-0 shadow-sm mb-4'>
+              <div className='card-header bg-white fw-bold py-3'>
                 Harga & Modal
               </div>
-              <div className="card-body">
-                <div className="mb-3">
-                  <label className="form-label">
-                    Harga Jual (Rp) <span className="text-danger">*</span>
+              <div className='card-body'>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    Harga Jual (Rp) <span className='text-danger'>*</span>
                   </label>
                   <input
-                    type="number"
-                    className="form-control fw-bold text-primary"
-                    name="price"
+                    type='number'
+                    className='form-control fw-bold text-primary'
+                    name='price'
                     value={form.price}
                     onChange={handleChange}
                     required
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">
-                    Modal / HPP (Rp) <span className="text-danger">*</span>
+                <div className='mb-3'>
+                  <label className='form-label'>
+                    Modal / HPP (Rp) <span className='text-danger'>*</span>
                   </label>
                   <input
-                    type="number"
-                    className="form-control"
-                    name="capital"
+                    type='number'
+                    className='form-control'
+                    name='capital'
                     value={form.capital}
                     onChange={handleChange}
                     required
@@ -306,49 +312,49 @@ const SaveProduct = ({ productId, onBack }) => {
                     profit >= 0 ? "alert-success" : "alert-danger"
                   } mb-0 py-2`}
                 >
-                  <div className="d-flex justify-content-between small">
+                  <div className='d-flex justify-content-between small'>
                     <span>Profit:</span>
-                    <span className="fw-bold">
+                    <span className='fw-bold'>
                       Rp {profit.toLocaleString("id-ID")}
                     </span>
                   </div>
-                  <div className="d-flex justify-content-between small mt-1">
+                  <div className='d-flex justify-content-between small mt-1'>
                     <span>Margin:</span>
-                    <span className="fw-bold">{margin}%</span>
+                    <span className='fw-bold'>{margin}%</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Inventaris & Pengiriman */}
-            <div className="card border-0 shadow-sm">
-              <div className="card-header bg-white fw-bold py-3">
+            <div className='card border-0 shadow-sm'>
+              <div className='card-header bg-white fw-bold py-3'>
                 Inventaris
               </div>
-              <div className="card-body">
-                <div className="mb-3">
-                  <label className="form-label">Stok Awal</label>
+              <div className='card-body'>
+                <div className='mb-3'>
+                  <label className='form-label'>Stok Awal</label>
                   <input
-                    type="number"
-                    className="form-control"
-                    name="stock"
+                    type='number'
+                    className='form-control'
+                    name='stock'
                     value={form.stock}
                     onChange={handleChange}
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">Berat (Gram)</label>
-                  <div className="input-group">
+                <div className='mb-3'>
+                  <label className='form-label'>Berat (Gram)</label>
+                  <div className='input-group'>
                     <input
-                      type="number"
-                      className="form-control"
-                      name="weight"
+                      type='number'
+                      className='form-control'
+                      name='weight'
                       value={form.weight}
                       onChange={handleChange}
                     />
-                    <span className="input-group-text">gr</span>
+                    <span className='input-group-text'>gr</span>
                   </div>
-                  <small className="text-muted d-block mt-1">
+                  <small className='text-muted d-block mt-1'>
                     1000 gr = 1 kg
                   </small>
                 </div>
@@ -356,20 +362,20 @@ const SaveProduct = ({ productId, onBack }) => {
             </div>
 
             {/* Tombol Simpan */}
-            <div className="d-grid mt-4">
+            <div className='d-grid mt-4'>
               <button
-                type="submit"
-                className="btn btn-primary btn-lg"
+                type='submit'
+                className='btn btn-primary btn-lg'
                 disabled={isSaving}
               >
                 {isSaving ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2"></span>
+                    <span className='spinner-border spinner-border-sm me-2'></span>
                     Menyimpan...
                   </>
                 ) : (
                   <>
-                    <i className="bi bi-save me-2"></i> Simpan Produk
+                    <i className='bi bi-save me-2'></i> Simpan Produk
                   </>
                 )}
               </button>

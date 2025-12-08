@@ -6,6 +6,22 @@ export const ApiOrder = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "/api/order" }),
   tagTypes: ["Order", "Couriers"],
   endpoints: (builder) => ({
+    getOrders: builder.query({
+      query: ({ page, limit, search }) => ({
+        url: "/get-orders",
+        method: "GET",
+        params: { page, limit, search },
+      }),
+      providesTags: ["Order"],
+    }),
+    adminUpdateOrder: builder.mutation({
+      query: ({ inv, status, shipping_number }) => ({
+        url: "/admin-update-order",
+        method: "POST",
+        body: { inv, status, shipping_number },
+      }),
+      invalidatesTags: ["Order"],
+    }),
     getMyOrders: builder.query({
       query: ({ page, limit, search }) => ({
         url: "/get-my-order",
@@ -30,12 +46,12 @@ export const ApiOrder = createApi({
       providesTags: ["Couriers"],
     }),
     getShippingCost: builder.query({
-      query: ({ courier, destination, weight }) => ({
+      // Ubah parameter 'destination' menjadi 'address_id'
+      query: ({ courier, address_id, weight }) => ({
         url: `/get-shipping-cost`,
         method: "GET",
-        params: { courier, destination, weight },
+        params: { courier, address_id, weight },
       }),
-      // Jangan cache terlalu lama agar real-time
       keepUnusedDataFor: 0,
     }),
     createOrder: builder.mutation({
@@ -67,6 +83,8 @@ export const ApiOrder = createApi({
 });
 
 export const {
+  useGetOrdersQuery,
+  useAdminUpdateOrderMutation,
   useGetMyOrdersQuery,
   useGetOrderStatusQuery,
   useGetCouriersQuery,

@@ -6,6 +6,164 @@ import * as msg from "../../utils/messages.js";
 const router = Router();
 
 // ============================================================================
+// Get orders ADMIN (ALL DATA)
+// ============================================================================
+router.get(
+  "/get-orders",
+  authorize("admin"),
+  withQuery(async (req, res, pool) => {
+    const { page = 1, limit = 10, search } = req.query;
+
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
+    const offset = (pageInt - 1) * limitInt;
+
+    // 1. Setup Query Params & Search Filter
+    let queryParams = [];
+    let whereClauses = [];
+    let paramCounter = 1;
+
+    // Filter Pencarian (Invoice, Nama Penerima, atau Nama User Akun)
+    if (search) {
+      whereClauses.push(`(
+        o.invoice_number ILIKE $${paramCounter} OR 
+        o.recipient_name ILIKE $${paramCounter} OR
+        u.name ILIKE $${paramCounter}
+      )`);
+      queryParams.push(`%${search}%`);
+      paramCounter++;
+    }
+
+    const whereStr =
+      whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    // 2. Query Utama
+    const dataQuery = `
+      SELECT 
+        o.id, 
+        o.invoice_number, 
+        o.status, 
+        o.total_price, 
+        o.created_at,
+        o.updated_at,
+        
+        -- Info Pengiriman
+        o.shipping_courier, 
+        o.shipping_service,
+        o.shipping_fee,
+        o.shipping_number, -- Resi
+        
+        -- Info Penerima & Alamat Snapshot
+        o.recipient_name,
+        o.shipping_address_detail,
+        o.shipping_postal_code,
+        u.name as user_account_name, -- Nama akun yang order
+        u.phone as user_phone, -- Nomor telepon akun yang order
+        
+        -- Join untuk mengambil Nama Wilayah (Readable)
+        prov.name as shipping_province_name,
+        reg.name as shipping_regency_name,
+        dist.name as shipping_district_name,
+        vill.name as shipping_village_name,
+
+        -- Subquery: Detail Items (JSON Array)
+        (
+            SELECT json_agg(
+                json_build_object(
+                    'product_name', p.name,
+                    'quantity', oi.quantity,
+                    'price', oi.price,
+                    'variant', CASE 
+                        WHEN pv.id IS NOT NULL THEN concat(pv.color, ' - ', pv.size)
+                        ELSE null 
+                    END,
+                    'image', (SELECT link FROM images WHERE product_id = p.id LIMIT 1)
+                )
+            )
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN product_variants pv ON oi.product_variant_id = pv.id
+            WHERE oi.order_id = o.id
+        ) as items
+
+      FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      -- Join Wilayah
+      LEFT JOIN provinces prov ON o.shipping_province_id = prov.id
+      LEFT JOIN regencies reg ON o.shipping_regency_id = reg.id
+      LEFT JOIN districts dist ON o.shipping_district_id = dist.id
+      LEFT JOIN villages vill ON o.shipping_village_id = vill.id
+      
+      ${whereStr}
+      ORDER BY o.created_at DESC
+      LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
+    `;
+
+    // 3. Query Total Data (Untuk Pagination)
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM orders o 
+      LEFT JOIN users u ON o.user_id = u.id
+      ${whereStr}
+    `;
+
+    // 4. Eksekusi Query
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(dataQuery, [...queryParams, limitInt, offset]),
+      pool.query(countQuery, queryParams),
+    ]);
+
+    const totalData = parseInt(countResult.rows[0].total);
+    const totalPage = Math.ceil(totalData / limitInt);
+
+    res.json({
+      message: "Data fetched",
+      data: dataResult.rows,
+      pagination: {
+        page: pageInt,
+        limit: limitInt,
+        totalData,
+        totalPage,
+        hasNext: pageInt < totalPage,
+      },
+    });
+  })
+);
+
+// Tambahkan endpoint ini di RouterOrder.js
+// Endpoint khusus Admin untuk update status & resi
+router.post(
+  "/admin-update-order",
+  authorize("admin"), // Hanya admin
+  withTransaction(async (req, res, pool) => {
+    const { inv, status, shipping_number } = req.body;
+
+    if (!inv || !status) {
+      return res.status(400).json({ message: "Invoice dan Status diperlukan" });
+    }
+
+    // Update status dan nomor resi (jika ada)
+    const query = `
+      UPDATE orders 
+      SET status = $1, shipping_number = $2, updated_at = NOW()
+      WHERE invoice_number = $3
+    `;
+
+    const result = await pool.query(query, [
+      status,
+      shipping_number || null,
+      inv,
+    ]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Order tidak ditemukan" });
+    }
+
+    res.status(200).json({ message: msg.updated });
+  })
+);
+
+// ============================================================================
 // Get my orders
 // ============================================================================
 router.get(
@@ -171,6 +329,8 @@ router.get(
 
     const result = await pool.query(query, [invoice_number, userid]);
 
+    console.log(result.rows);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Pesanan tidak ditemukan" });
     }
@@ -193,6 +353,7 @@ router.get(
 );
 
 // GET Shipping Cost
+// GET Shipping Cost (By Address ID)
 router.get(
   "/get-shipping-cost",
   authorize("user"),
@@ -220,59 +381,53 @@ router.get(
       }
 
       // 2. Ambil parameter dari query URL
-      // destination di sini adalah string (nama desa/kecamatan)
-      const { courier, destination, weight } = req.query;
+      // UBAH: Kita butuh address_id, bukan nama destination lagi
+      const { courier, address_id, weight } = req.query;
+      const userId = req.user.id;
 
-      if (!destination || !courier || !weight) {
+      if (!address_id || !courier || !weight) {
         return res.status(400).json({
-          message:
-            "Mohon lengkapi courier, destination (nama lokasi), dan weight.",
+          message: "Mohon lengkapi courier, address_id, dan weight.",
         });
       }
 
-      // Header untuk request ke API Komerce
+      // 3. Ambil shipping_id dari Database berdasarkan Address ID user
+      const addressQuery = `
+        SELECT shipping_id 
+        FROM addresses 
+        WHERE id = $1 AND user_id = $2
+      `;
+
+      const addressResult = await pool.query(addressQuery, [
+        address_id,
+        userId,
+      ]);
+
+      if (addressResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "Alamat tidak ditemukan atau akses ditolak." });
+      }
+
+      const shippingId = addressResult.rows[0].shipping_id;
+
+      if (!shippingId) {
+        return res.status(400).json({
+          message:
+            "Data alamat ini belum memiliki ID Lokasi (Shipping ID). Silakan edit alamat ini terlebih dahulu.",
+        });
+      }
+
+      // 4. Hitung Ongkir Langsung (Tanpa Search lagi)
       const requestHeaders = {
         accept: "application/json",
         key: apiKey,
       };
 
-      // -----------------------------------------------------------
-      // LANGKAH 3: Cari ID Destinasi berdasarkan nama (Search)
-      // -----------------------------------------------------------
-      const searchLocation = encodeURIComponent(destination.toLowerCase());
-
-      // Kita limit 1 saja agar mendapatkan hasil paling relevan di urutan pertama
-      const searchUrl = `https://rajaongkir.komerce.id/api/v1/destination/domestic-destination?search=${searchLocation}&limit=1`;
-
-      const searchResponse = await fetch(searchUrl, {
-        method: "GET",
-        headers: requestHeaders,
-      });
-
-      const searchResult = await searchResponse.json();
-
-      // Validasi response search
-      if (
-        !searchResult.data ||
-        !Array.isArray(searchResult.data) ||
-        searchResult.data.length === 0
-      ) {
-        return res.status(404).json({
-          message: `Lokasi '${destination}' tidak ditemukan. Coba gunakan nama kecamatan yang lebih spesifik.`,
-        });
-      }
-
-      // Ambil ID dari data pertama (index 0) sesuai sample response
-      const destinationData = searchResult.data[0];
-      const destinationId = destinationData.id;
-
-      // -----------------------------------------------------------
-      // LANGKAH 4: Hitung Ongkir menggunakan ID yang ditemukan
-      // -----------------------------------------------------------
       const shippingParams = new URLSearchParams();
       shippingParams.append("courier", courier);
       shippingParams.append("origin", originId);
-      shippingParams.append("destination", destinationId); // ID hasil pencarian
+      shippingParams.append("destination", shippingId); // Gunakan ID dari Database
       shippingParams.append("weight", weight);
 
       const costOptions = {
@@ -297,18 +452,11 @@ router.get(
         });
       }
 
-      // -----------------------------------------------------------
-      // LANGKAH 5: Response ke Frontend
-      // -----------------------------------------------------------
-      // Mengembalikan data ongkir + info lokasi yang didapat agar user tahu lokasi mana yang terdeteksi
+      // 5. Response ke Frontend
       res.status(200).json({
         costs: costResult.data,
-        location_details: {
-          id: destinationData.id,
-          label: destinationData.label,
-          district: destinationData.district_name,
-          city: destinationData.city_name,
-        },
+        // Kita tidak perlu mengembalikan location_details lagi karena
+        // frontend sudah tahu alamat mana yang dipilih.
       });
     } catch (error) {
       console.error(error);

@@ -1,9 +1,19 @@
 import { Router } from "express";
 import { authorize } from "../../middleware/authorize.js";
 import { withQuery, withTransaction } from "../../utils/dbWrapper.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { compressImage } from "../../utils/comporessImage.js";
 
 const router = Router();
 
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// ============================================================================
+// 1. PUBLIC CONFIG (User)
+// ============================================================================
 router.get(
   "/get-mid-config",
   authorize("user"),
@@ -12,7 +22,7 @@ router.get(
         SELECT key, value 
         FROM configurations 
         WHERE key 
-        IN ('midtrans_server_key', 'midtrans_client_key', 'midtrans_merchant_id', 'midtrans_base_url', 'midtrans_is_production')
+        IN ('midtrans_client_key', 'midtrans_base_url', 'midtrans_is_production')
       `;
     const configResult = await pool.query(configQuery);
     const configMap = configResult.rows.reduce((acc, row) => {
@@ -20,10 +30,89 @@ router.get(
       return acc;
     }, {});
 
-    const clientKey = configMap["midtrans_client_key"];
-    const midtransBaseUrl = configMap["midtrans_base_url"];
+    res.status(200).json({
+      clientKey: configMap["midtrans_client_key"],
+      midtransBaseUrl: configMap["midtrans_base_url"],
+    });
+  })
+);
 
-    res.status(200).json({ clientKey, midtransBaseUrl });
+// ============================================================================
+// 2. GET ALL CONFIGS (Admin)
+// ============================================================================
+router.get(
+  "/get-configs",
+  authorize("admin"),
+  withQuery(async (req, res, pool) => {
+    // Mengambil semua konfigurasi, diurutkan berdasarkan kategori agar rapi di UI
+    const result = await pool.query(
+      "SELECT * FROM configurations ORDER BY category DESC, id ASC"
+    );
+    res.json(result.rows);
+  })
+);
+
+// ============================================================================
+// 3. SAVE CONFIGS (Admin) - Supports Text & File Upload
+// ============================================================================
+router.put(
+  "/save-configs",
+  authorize("admin"),
+  upload.any(), // Handle multipart/form-data (Text & Files)
+  withTransaction(async (req, res, client) => {
+    // A. Handle Text Fields (req.body)
+    // req.body berisi key-value pair: { "store_name": "Toserba Baru", ... }
+    for (const [key, value] of Object.entries(req.body)) {
+      // CONSTRAINT: Hanya update jika KEY sudah ada di database.
+      // Tidak ada INSERT, sehingga Admin tidak bisa menambah konfigurasi liar.
+      await client.query(
+        "UPDATE configurations SET value = $1, updated_at = NOW() WHERE key = $2",
+        [value, key]
+      );
+    }
+
+    // B. Handle Files (req.files) - untuk Logo/Favicon
+    if (req.files && req.files.length > 0) {
+      const targetDir = path.join(process.cwd(), "server/assets/shop");
+
+      // Buat folder jika belum ada
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      for (const file of req.files) {
+        const key = file.fieldname; // fieldname harus sesuai dengan 'key' di DB (misal: store_logo)
+
+        // 1. Validasi: Pastikan key ini memang bertipe 'image' di database
+        const check = await client.query(
+          "SELECT id FROM configurations WHERE key = $1 AND type = 'image'",
+          [key]
+        );
+
+        if (check.rows.length > 0) {
+          // 2. Proses Simpan File
+          const ext = path.extname(file.originalname).toLowerCase();
+          const filename = `${key}_${Date.now()}${ext}`; // Timestamp agar cache refresh
+          const outputPath = path.join(targetDir, filename);
+          const dbLink = `/assets/shop/${filename}`;
+
+          // Kompres jika gambar, simpan biasa jika ico/svg
+          if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+            await compressImage(file.buffer, outputPath);
+          } else {
+            fs.writeFileSync(outputPath, file.buffer);
+          }
+
+          // 3. Update Database Path
+          await client.query(
+            "UPDATE configurations SET value = $1, updated_at = NOW() WHERE key = $2",
+            [dbLink, key]
+          );
+        }
+      }
+    }
+
+    res.json({ message: "Konfigurasi berhasil diperbarui" });
   })
 );
 

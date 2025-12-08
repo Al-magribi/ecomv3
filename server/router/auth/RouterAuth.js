@@ -124,6 +124,31 @@ router.post(
       return res.status(400).json({ message: "Email atau password salah!" });
     }
 
+    const addressResult = await pool.query(
+      ` SELECT 
+        a.*,
+        p.name as province_name,
+        r.name as regency_name,
+        d.name as district_name,
+        v.name as village_name
+      FROM addresses a
+      LEFT JOIN provinces p ON a.province_id = p.id
+      LEFT JOIN regencies r ON a.regency_id = r.id
+      LEFT JOIN districts d ON a.district_id = d.id
+      LEFT JOIN villages v ON a.village_id = v.id
+      WHERE a.user_id = $1
+      ORDER BY a.is_primary DESC, a.created_at DESC`,
+      [user.id]
+    );
+
+    // 3. Masukkan data alamat ke object user
+    user.addresses = addressResult.rows;
+
+    // 4. Bersihkan data sensitif
+    delete user.password;
+    delete user.activation_code;
+    delete user.activation_expires;
+
     // 4. Buat Token JWT
     const token = jwt.sign(
       { id: user.id, email: user.email },
@@ -141,7 +166,7 @@ router.post(
       maxAge: sevenDays,
     });
 
-    res.status(200).json({ message: "Login berhasil" });
+    res.status(200).json(user);
   })
 );
 
@@ -154,6 +179,10 @@ router.get(
   withQuery(async (req, res, pool) => {
     // 1. Ambil user dasar dari middleware authorize
     const user = { ...req.user }; // Copy object agar aman
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
     // 2. Query untuk mengambil daftar alamat user ini
     // Menggunakan pool query (sesuaikan dengan cara koneksi db anda)

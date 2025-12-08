@@ -21,7 +21,7 @@ const ShippingMethod = ({
   // --- API SOURCES ---
   const { data: couriers } = useGetCouriersQuery();
 
-  // API Ongkir (Realtime)
+  // API Ongkir (Realtime) - Updated for new Backend Logic
   const {
     data: shippingResponse,
     isFetching: isShippingLoading,
@@ -29,11 +29,12 @@ const ShippingMethod = ({
   } = useGetShippingCostQuery(
     {
       courier: selectedCourier,
-      destination: activeAddress?.village_name,
+      address_id: activeAddress?.id, // Gunakan ID Alamat, bukan nama desa
       weight: totalWeight,
     },
     {
-      skip: !selectedCourier || !activeAddress || totalWeight === 0,
+      // Skip jika kurir belum dipilih atau Alamat belum punya ID
+      skip: !selectedCourier || !activeAddress?.id || totalWeight === 0,
     }
   );
 
@@ -91,29 +92,28 @@ const ShippingMethod = ({
         {isShippingLoading && (
           <div className='alert alert-info py-2 small'>
             <div className='spinner-border spinner-border-sm me-2'></div>
-            Mengecek biaya kirim ke {activeAddress?.village_name}...
+            Menghitung ongkos kirim...
           </div>
         )}
 
         {/* Error Handling */}
         {shippingError && (
           <div className='alert alert-danger py-2 small'>
-            Gagal:{" "}
-            {shippingError.data?.message || "Cek koneksi atau nama daerah."}
-          </div>
-        )}
-
-        {/* Info Lokasi (Opsional) */}
-        {shippingResponse?.location_details && !isShippingLoading && (
-          <div className='alert alert-success py-2 small mb-3'>
-            <i className='bi bi-geo me-1'></i>
-            Lokasi terdeteksi:{" "}
-            <strong>{shippingResponse.location_details.label}</strong>
+            <strong>Gagal: </strong>
+            {shippingError.data?.message ||
+              "Terjadi kesalahan saat mengecek ongkir."}
+            <br />
+            {shippingError.status === 400 && (
+              <span className='text-muted' style={{ fontSize: "0.85rem" }}>
+                *Pastikan alamat Anda sudah diedit dan disimpan ulang agar
+                terdeteksi sistem pengiriman.
+              </span>
+            )}
           </div>
         )}
 
         {/* DROP DOWN 2: Pilih Layanan (Service) */}
-        {shippingCosts.length > 0 && (
+        {!isShippingLoading && shippingCosts.length > 0 && (
           <div className='mb-3 animate__animated animate__fadeIn'>
             <label className='form-label fw-bold'>Pilih Layanan</label>
             <select
