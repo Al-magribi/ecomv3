@@ -25,6 +25,7 @@ import Reports from "./module/admin/reports/Reports";
 import ProtectedRoute from "./components/protection/ProtectedRoute";
 import PublicRoute from "./components/protection/PublicRoute";
 import Config from "./module/admin/config/Config";
+import Users from "./module/admin/users/Users";
 
 const App = () => {
   const isSignin = isAuthenticated();
@@ -38,38 +39,39 @@ const App = () => {
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingScreen />}>
-        <ToastContainer position='top-left' />
+        <ToastContainer position="top-left" />
         <Routes>
           {/* --- PUBLIC ROUTES (Hanya untuk yang BELUM login) --- */}
           {/* Jika sudah login, akses ke sini akan diredirect ke "/" atau dashboard */}
           <Route element={<PublicRoute />}>
-            <Route path='/signin' element={<Signin />} />
-            <Route path='/signup' element={<Signup />} />
-            <Route path='/activation/:code' element={<Activation />} />
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/activation/:code" element={<Activation />} />
           </Route>
 
           {/* --- ADMIN ROUTES (Hanya Role: admin) --- */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path='/admin-dashboard' element={<Dashboard />} />
-            <Route path='/admin-products' element={<Products />} />
-            <Route path='/admin-orders' element={<Orders />} />
-            <Route path='/admin-reports' element={<Reports />} />
-            <Route path='/admin-config' element={<Config />} />
+            <Route path="/admin-dashboard" element={<Dashboard />} />
+            <Route path="/admin-users" element={<Users />} />
+            <Route path="/admin-products" element={<Products />} />
+            <Route path="/admin-orders" element={<Orders />} />
+            <Route path="/admin-reports" element={<Reports />} />
+            <Route path="/admin-config" element={<Config />} />
           </Route>
 
           {/* --- USER ROUTES (Hanya Role: user) --- */}
           <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
-            <Route path='/orders' element={<Order />} />
-            <Route path='/order/status/:inv' element={<Status />} />
-            <Route path='/cart' element={<Cart />} />
-            <Route path='/checkout' element={<Checkout />} />
+            <Route path="/orders" element={<Order />} />
+            <Route path="/order/status/:inv" element={<Status />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
             {/* User juga bisa akses profile */}
-            <Route path='/profile' element={<Profile />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* --- OPEN ROUTES (Bisa diakses siapa saja atau logic khusus) --- */}
-          <Route path='/' element={<Home />} />
-          <Route path='*' element={<Home />} />
+          <Route path="/" element={<Home />} />
+          <Route path="*" element={<Home />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

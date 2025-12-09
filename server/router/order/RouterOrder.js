@@ -344,11 +344,37 @@ router.get(
   "/get-couriers",
   authorize("user", "admin"),
   withQuery(async (req, res, pool) => {
-    const data = await pool.query(
-      `SELECT * from couriers WHERE isactive = true ORDER BY courier ASC`
-    );
+    const role = req.user.role;
+
+    let data;
+
+    if (role !== "admin") {
+      data = await pool.query(
+        `SELECT * from couriers WHERE isactive = true ORDER BY courier ASC`
+      );
+    } else {
+      data = await pool.query(`SELECT * from couriers ORDER BY courier ASC`);
+    }
 
     res.status(200).json(data.rows);
+  })
+);
+
+router.put(
+  "/update-courier",
+  authorize("admin"),
+  withTransaction(async (req, res, client) => {
+    const { id, isactive } = req.body;
+
+    const query = `
+      UPDATE couriers
+      SET isactive = $1
+      WHERE id = $2
+    `;
+
+    const result = await client.query(query, [isactive, id]);
+
+    res.status(200).json({ message: msg.updated });
   })
 );
 

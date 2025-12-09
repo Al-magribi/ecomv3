@@ -13,7 +13,15 @@ export const ApiReport = createApi({
       query: () => `/sales-report`,
       providesTags: ["Report"],
     }),
+    getUsers: builder.query({
+      query: ({ page, search }) => ({
+        url: `/users-report`,
+        params: { page, search },
+      }),
+      providesTags: ["Report"],
+    }),
   }),
 });
 
-export const { useGetSummaryQuery, useGetReportQuery } = ApiReport;
+export const { useGetSummaryQuery, useGetReportQuery, useGetUsersQuery } =
+  ApiReport;

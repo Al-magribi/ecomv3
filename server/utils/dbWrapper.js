@@ -40,8 +40,7 @@ export const withTransaction = (handler) => {
         res.status(500).json({
           status: "error",
           message: "Transaction failed",
-          error:
-            process.env.NODE_ENV === "development" ? error.message : undefined,
+          error: process.env.MODE === "development" ? error.message : undefined,
         });
       }
     } finally {
@@ -69,8 +68,7 @@ export const withQuery = (handler) => {
         res.status(500).json({
           status: "error",
           message: "Internal Server Error",
-          error:
-            process.env.NODE_ENV === "development" ? error.message : undefined,
+          error: process.env.MODE === "development" ? error.message : undefined,
         });
       }
     }

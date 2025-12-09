@@ -176,4 +176,87 @@ router.get(
   })
 );
 
+router.get(
+  "/users-report",
+  authorize("admin"),
+  withQuery(async (req, res, pool) => {
+    const { page = 1, limit = 10, search } = req.query;
+
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
+    const offset = (pageInt - 1) * limitInt;
+
+    let queryParams = [];
+    // Filter default: Bukan admin
+    let whereClauses = ["u.role != 'admin'"];
+
+    // Search Logic (Cari di Users atau Alamat)
+    if (search) {
+      queryParams.push(`%${search}%`);
+      const i = queryParams.length;
+      whereClauses.push(`(
+        u.name ILIKE $${i} OR 
+        u.email ILIKE $${i} OR
+        addr.recipient_name ILIKE $${i}
+      )`);
+    }
+
+    const whereStr = `WHERE ${whereClauses.join(" AND ")}`;
+
+    // Update Query: Join ke Address dan Wilayah
+    const dataQuery = `
+      SELECT 
+        u.id, 
+        u.name, 
+        u.email, 
+        u.phone, 
+        u.is_active, 
+        u.created_at,
+        
+        -- Info Alamat Utama (Primary)
+        addr.detail as address_detail,
+        addr.postal_code,
+        prov.name as province_name,
+        reg.name as regency_name,
+        dist.name as district_name,
+        vill.name as village_name
+
+      FROM users u
+      -- Ambil hanya alamat utama (is_primary = true)
+      LEFT JOIN addresses addr ON u.id = addr.user_id AND addr.is_primary = true
+      LEFT JOIN provinces prov ON addr.province_id = prov.id
+      LEFT JOIN regencies reg ON addr.regency_id = reg.id
+      LEFT JOIN districts dist ON addr.district_id = dist.id
+      LEFT JOIN villages vill ON addr.village_id = vill.id
+      
+      ${whereStr}
+      ORDER BY u.created_at DESC
+      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+    `;
+
+    const countQuery = `SELECT COUNT(*) as total FROM users u LEFT JOIN addresses addr ON u.id = addr.user_id AND addr.is_primary = true ${whereStr}`;
+
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(dataQuery, [...queryParams, limitInt, offset]),
+      pool.query(countQuery, queryParams),
+    ]);
+
+    const totalData = parseInt(countResult.rows[0].total);
+    const totalPage = Math.ceil(totalData / limitInt);
+
+    res.json({
+      message: "Data user berhasil diambil",
+      data: dataResult.rows,
+      pagination: {
+        page: pageInt,
+        limit: limitInt,
+        totalData,
+        totalPage,
+        hasNext: pageInt < totalPage,
+        hasPrev: pageInt > 1,
+      },
+    });
+  })
+);
+
 export default router;

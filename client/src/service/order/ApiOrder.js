@@ -38,6 +38,8 @@ export const ApiOrder = createApi({
       }),
       providesTags: ["Order"],
     }),
+
+    // courier
     getCouriers: builder.query({
       query: () => ({
         url: "/get-couriers",
@@ -45,6 +47,16 @@ export const ApiOrder = createApi({
       }),
       providesTags: ["Couriers"],
     }),
+
+    updateCourier: builder.mutation({
+      query: ({ id, isactive }) => ({
+        url: "/update-courier",
+        method: "PUT",
+        body: { id, isactive },
+      }),
+      invalidatesTags: ["Couriers"],
+    }),
+
     getShippingCost: builder.query({
       // Ubah parameter 'destination' menjadi 'address_id'
       query: ({ courier, address_id, weight }) => ({
@@ -54,6 +66,7 @@ export const ApiOrder = createApi({
       }),
       keepUnusedDataFor: 0,
     }),
+
     createOrder: builder.mutation({
       query: (body) => ({
         url: "/create-order",
@@ -88,6 +101,7 @@ export const {
   useGetMyOrdersQuery,
   useGetOrderStatusQuery,
   useGetCouriersQuery,
+  useUpdateCourierMutation,
   useGetShippingCostQuery,
   useCreateOrderMutation,
   useUpdateOrderStatusMutation,

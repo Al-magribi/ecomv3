@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import SideBar from "./SideBar";
 import Input from "./Input";
 import Profile from "./Profile"; // <--- Import Component Baru
+import Couriers from "./Couriers";
 
 const Config = () => {
   // --- STATE ---
@@ -106,39 +107,39 @@ const Config = () => {
   if (isError) return <AdminLayout>Error loading config.</AdminLayout>;
 
   return (
-    <AdminLayout>
-      <div className='d-flex justify-content-between align-items-center mb-4'>
+    <AdminLayout title={`Pengaturan Aplikasi`}>
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h3 className='fw-bold mb-0'>Pengaturan Aplikasi</h3>
-          <small className='text-muted'>
+          <h3 className="fw-bold mb-0">Pengaturan Aplikasi</h3>
+          <small className="text-muted">
             Kelola konfigurasi sistem & profil
           </small>
         </div>
 
         {/* Tombol Simpan HANYA muncul jika bukan tab Profile */}
-        {activeTab !== "profile" && (
+        {!["profile", "courier"].includes(activeTab) && (
           <button
-            className='btn btn-primary'
+            className="btn btn-primary"
             onClick={handleSubmit}
             disabled={isSaving}
           >
             {isSaving ? (
               <>
-                <span className='spinner-border spinner-border-sm me-2'></span>
+                <span className="spinner-border spinner-border-sm me-2"></span>
                 Menyimpan...
               </>
             ) : (
               <>
-                <i className='bi bi-save me-2'></i>Simpan Perubahan
+                <i className="bi bi-save me-2"></i>Simpan Perubahan
               </>
             )}
           </button>
         )}
       </div>
 
-      <div className='row'>
+      <div className="row">
         {/* --- Sidebar --- */}
-        <div className='col-md-3 mb-4 mb-md-0'>
+        <div className="col-md-3 mb-4 mb-md-0">
           <SideBar
             categories={categories}
             activeTab={activeTab}
@@ -147,20 +148,22 @@ const Config = () => {
         </div>
 
         {/* --- Main Content --- */}
-        <div className='col-md-9'>
-          <div className='card border-0 shadow-sm'>
-            <div className='card-header bg-white py-3 fw-bold text-capitalize border-bottom'>
+        <div className="col-md-9">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white py-3 fw-bold text-capitalize border-bottom">
               Konfigurasi {activeTab}
             </div>
-            <div className='card-body p-4'>
+            <div className="card-body p-4">
               {/* --- KONDISI RENDER --- */}
               {activeTab === "profile" ? (
                 // 1. Render Component Profile jika tab 'profile' aktif
                 <Profile />
+              ) : activeTab === "courier" ? (
+                <Couriers />
               ) : (
                 // 2. Render Form Config biasa untuk tab lainnya
                 <form onSubmit={handleSubmit}>
-                  <div className='row g-4'>
+                  <div className="row g-4">
                     {groupedConfigs[activeTab]?.map((config) => (
                       <div
                         className={`col-12 ${
@@ -170,10 +173,10 @@ const Config = () => {
                         }`}
                         key={config.id}
                       >
-                        <div className='mb-3'>
-                          <label className='form-label fw-semibold'>
+                        <div className="mb-3">
+                          <label className="form-label fw-semibold">
                             {config.description}
-                            <span className='text-muted fw-normal ms-2 small opacity-50'>
+                            <span className="text-muted fw-normal ms-2 small opacity-50">
                               ({config.key})
                             </span>
                           </label>
