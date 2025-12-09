@@ -5,6 +5,12 @@ export const ApiConfig = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "/api/config" }),
   tagTypes: ["Config"],
   endpoints: (builder) => ({
+    // Logo & favicon
+    getStore: builder.query({
+      query: () => "/get-store",
+      providesTags: ["Config"],
+    }),
+
     // Untuk User (Public/Safe Configs)
     getMidConfig: builder.query({
       query: () => "/get-mid-config",
@@ -30,6 +36,7 @@ export const ApiConfig = createApi({
 });
 
 export const {
+  useGetStoreQuery,
   useGetMidConfigQuery,
   useGetConfigsQuery,
   useSaveConfigsMutation,

@@ -28,8 +28,8 @@ INSERT INTO configurations (category, key, value, description, type) VALUES
 ('smtp', 'smtp_from_name', 'TOSERBA System', 'Nama Pengirim Email', 'string');
 
 INSERT INTO configurations (category, key, value, description, type) VALUES
-('shipping', 'shpping_api', '7bb197bedea1c1c149042aef68b0e2ee', 'API RAJA ONGKIR', 'string'),
-('shipping', 'shpping_origin', '8122', 'Lokasi Toko', 'string');
+('shipping', 'shipping_api', '7bb197bedea1c1c149042aef68b0e2ee', 'API RAJA ONGKIR', 'string'),
+('shipping', 'shipping_origin', '8122', 'Lokasi Toko', 'string');
 
 -- ====================================================================================
 -- BAGIAN 1: BERSIHKAN DATABASE (RESET)
@@ -301,24 +301,7 @@ EXECUTE FUNCTION update_timestamp();
 -- BAGIAN 4: SEEDING DATA (DUMMY)
 -- ====================================================================================
 
--- 1. SEED WILAYAH (SAMPLE DATA: JABAR & DKI)
--- (Catatan: Di production, Anda harus import CSV full)
-INSERT INTO provinces (id, name) VALUES 
-('31', 'DKI JAKARTA'), ('32', 'JAWA BARAT');
-
-INSERT INTO regencies (id, province_id, name) VALUES 
-('3171', '31', 'KOTA JAKARTA PUSAT'), ('3174', '31', 'KOTA JAKARTA SELATAN'),
-('3204', '32', 'KABUPATEN BANDUNG'), ('3273', '32', 'KOTA BANDUNG');
-
-INSERT INTO districts (id, regency_id, name) VALUES 
-('3171010', '3171', 'GAMBIR'), ('3174060', '3174', 'CILANDAK'),
-('3204050', '3204', 'CILEUNYI'), ('3273060', '3273', 'CICENDO');
-
-INSERT INTO villages (id, district_id, name) VALUES 
-('3171010001', '3171010', 'GAMBIR'), ('3174060001', '3174060', 'CILANDAK BARAT'),
-('3204050001', '3204050', 'CILEUNYI KULON'), ('3273060001', '3273060', 'ARJUNA');
-
-
+-- 1. SEED Courier
 INSERT INTO couriers(courier, code) VALUES
 ('JNE', 'jne'),
 ('SiCepat', 'sicepat'),

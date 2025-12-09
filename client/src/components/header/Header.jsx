@@ -5,10 +5,13 @@ import { useDoLogoutMutation } from "../../service/auth/ApiAuth";
 import { toast } from "react-toastify";
 import { setSignOut } from "../../utils/authentication";
 import { useGetCartQuery } from "../../service/cart/ApiCart";
+import { useGetStoreQuery } from "../../service/config/ApiConfig";
 
 // Hapus props search/setSearch karena kita akan pakai local state & URL
 const Header = () => {
-  const { user } = useSelector((state) => state.auth);
+  const { data: store, isLoading: imgLoading } = useGetStoreQuery();
+
+  const { user, isLoading: userLoading } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams(); // Untuk membaca URL
 
@@ -17,7 +20,9 @@ const Header = () => {
 
   const [doLogout, { isSuccess, error, data }] = useDoLogoutMutation();
 
-  const { data: cart, isLoading } = useGetCartQuery(undefined, { skip: !user });
+  const { data: cart, isLoading } = useGetCartQuery(undefined, {
+    skip: !user || user?.role === "admin",
+  });
 
   // 2. Sinkronisasi input dengan URL (agar saat di-refresh isi search tidak hilang)
   useEffect(() => {
@@ -58,19 +63,25 @@ const Header = () => {
   return (
     <nav className='navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top py-2'>
       <div className='container'>
-        <Link
-          className='navbar-brand d-none d-lg-flex align-items-center me-4'
-          to='/'
-        >
-          <img
-            src='/logo.png'
-            alt='Logo'
-            width='40'
-            height='40'
-            className='d-inline-block align-text-top me-2 object-fit-contain'
-          />
-          <span className='fw-bold text-primary fs-4'>TOSERBA</span>
-        </Link>
+        {imgLoading ? (
+          <div className='spinner-border text-primary me-4' role='status'>
+            <span className='visually-hidden'>Loading...</span>
+          </div>
+        ) : (
+          <Link
+            className='navbar-brand d-none d-lg-flex align-items-center me-4'
+            to='/'
+          >
+            <img
+              src={store?.logo}
+              alt='Logo'
+              width='40'
+              height='40'
+              className='d-inline-block align-text-top me-2 object-fit-contain'
+            />
+            <span className='fw-bold text-primary fs-4'>{store?.name}</span>
+          </Link>
+        )}
 
         {/* Form Search */}
         <form

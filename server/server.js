@@ -1,8 +1,8 @@
 import "dotenv/config";
-import server from "./app.js";
+import app from "./app.js";
 import pool from "./config/database.js";
 
-server.listen(process.env.PORT, async () => {
+app.listen(process.env.PORT || 2090, async () => {
   try {
     console.log(`Server is running on port ${process.env.PORT}`);
 

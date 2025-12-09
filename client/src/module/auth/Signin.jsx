@@ -8,7 +8,7 @@ import {
 import { toast } from "react-toastify";
 import { setSignIn } from "../../utils/authentication";
 
-const Signin = () => {
+const Signin = ({ logo, isLoad }) => {
   const navigate = useNavigate();
 
   const [DoSignin, { data, error, isLoading, isSuccess }] =
@@ -61,12 +61,14 @@ const Signin = () => {
       >
         {/* Header Logo */}
         <div className='text-center mb-4'>
-          <img
-            src='/logo.png'
-            alt='logo toserba'
-            width={100}
-            className='mb-2'
-          />
+          {isLoad ? (
+            <div className='spinner-border text-primary me-4' role='status'>
+              <span className='visually-hidden'>Loading...</span>
+            </div>
+          ) : (
+            <img src={logo} alt='logo' width={100} className='mb-2' />
+          )}
+
           <h4 className='fw-bold text-dark'>Selamat Datang</h4>
           <p className='text-muted small'>Silakan login untuk melanjutkan</p>
         </div>

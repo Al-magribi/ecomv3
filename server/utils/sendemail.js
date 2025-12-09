@@ -12,11 +12,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const url =
-  process.env.NODE_MODE === "dev" ? process.env.LOCAL : process.env.DOMAIN;
-
 // Send activation email
-export const sendActivationEmail = async (email, name, activationCode) => {
+export const sendActivationEmail = async (email, name, activationCode, url) => {
   const activationUrl = `${url}/activation/${activationCode}`;
 
   const mailOptions = {

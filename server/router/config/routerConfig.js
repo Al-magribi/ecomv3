@@ -116,4 +116,30 @@ router.put(
   })
 );
 
+// ============================================================================
+// 4. LOGO & FAVICON
+// ============================================================================
+router.get(
+  "/get-store",
+  withQuery(async (req, res, pool) => {
+    const configQuery = `
+        SELECT key, value 
+        FROM configurations 
+        WHERE key 
+        IN ('store_logo', 'store_favicon', 'store_name')
+      `;
+    const configResult = await pool.query(configQuery);
+    const configMap = configResult.rows.reduce((acc, row) => {
+      acc[row.key] = row.value;
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      logo: configMap["store_logo"],
+      favicon: configMap["store_favicon"],
+      name: configMap["store_name"],
+    });
+  })
+);
+
 export default router;

@@ -22,6 +22,14 @@ router.post(
         .json({ message: "Lengkapi data yang diperlukan!" });
     }
 
+    const configResult = await client.query(
+      `SELECT value FROM configurations WHERE key = 'domain'`
+    );
+    if (configResult.rows.length === 0) {
+      throw new Error("Konfigurasi domain belum diatur.");
+    }
+    const url = configResult.rows[0].value;
+
     // Cek email duplikat
     // Note: client sudah dalam posisi 'BEGIN', jadi aman langsung query
     const check = await client.query(`SELECT * FROM users WHERE email = $1`, [
@@ -42,7 +50,7 @@ router.post(
     const activationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // Kirim email
-    await sendActivationEmail(email, name, activationCode);
+    await sendActivationEmail(email, name, activationCode, url);
 
     // Simpan user
     await client.query(

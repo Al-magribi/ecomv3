@@ -6,7 +6,7 @@ import {
 } from "../../service/auth/ApiAuth";
 import { toast } from "react-toastify";
 
-const Signup = () => {
+const Signup = ({ logo, isLoad }) => {
   const [DoSignup, { data, error, isLoading, isSuccess }] =
     useDoSignupMutation();
 
@@ -69,12 +69,13 @@ const Signup = () => {
       >
         {/* Header Logo */}
         <div className='text-center mb-4'>
-          <img
-            src='/logo.png'
-            alt='logo toserba'
-            width={100}
-            className='mb-2'
-          />
+          {isLoad ? (
+            <div className='spinner-border text-primary me-4' role='status'>
+              <span className='visually-hidden'>Loading...</span>
+            </div>
+          ) : (
+            <img src={logo} alt='logo' width={100} className='mb-2' />
+          )}
           <h4 className='fw-bold text-dark'>Buat Akun Baru</h4>
           <p className='text-muted small'>
             Daftar untuk memulai aplikasi Toserba
