@@ -77,9 +77,14 @@ router.post("/test-db", async (req, res) => {
   try {
     await client.connect();
     await client.query("SELECT NOW()");
-    await client.end();
+    await client.end(); // Tutup jika berhasil
     return res.status(200).json({ message: "Koneksi Berhasil!" });
   } catch (error) {
+    // PENTING: Pastikan client ditutup meskipun error, agar tidak hang
+    try {
+      await client.end();
+    } catch (e) {}
+
     return res
       .status(400)
       .json({ message: "Gagal terhubung: " + error.message });
@@ -123,7 +128,7 @@ router.post("/finish", async (req, res) => {
 
     // B. Jalankan Tables.sql (Create Table & Seed Courier/Dummy Products)
     // File Tables.sql ada di root folder server
-    const sqlPath = path.resolve(__dirname, "../../Tables.sql");
+    const sqlPath = path.resolve(__dirname, "../../../Tables.sql");
     const sqlContent = fs.readFileSync(sqlPath, "utf8");
     await client.query(sqlContent);
 

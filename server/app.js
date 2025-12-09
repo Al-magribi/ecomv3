@@ -38,11 +38,11 @@ if (!isInstalled) {
 
   // 2. Serve UI Installer (File HTML Wizard yang Anda buat sebelumnya)
   // Pastikan folder 'installer/public' ada dan berisi index.html
-  app.use(express.static(path.join(__dirname, "installer/public")));
+  app.use(express.static(path.join(__dirname, "installer")));
 
-  // 3. Catch-all: Selalu tampilkan halaman installer jika user akses URL apapun
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "installer/index.html"));
+  // Catch-all untuk installer
+  app.get("/{*splat}", (req, res) => {
+    res.sendFile(path.join(installerPath, "index.html"));
   });
 } else {
   // ==========================================
