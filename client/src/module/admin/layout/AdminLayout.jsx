@@ -33,6 +33,7 @@ const AdminLayout = ({ children, title }) => {
     { path: "/admin-orders", label: "Pesanan", icon: "bi-cart-check" },
     { path: "/admin-reports", label: "Laporan", icon: "bi-bar-chart-line" },
     { path: "/admin-config", label: "Konfigurasi", icon: "bi-sliders2" },
+    { path: "/admin-database", label: "Database", icon: "bi-database" },
   ];
 
   // Komponen Sidebar Content

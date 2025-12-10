@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const ApiConfig = createApi({
   reducerPath: "ApiConfig",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/config" }),
-  tagTypes: ["Config"],
+  tagTypes: ["Config", "Tables"],
   endpoints: (builder) => ({
     // Logo & favicon
     getStore: builder.query({
@@ -37,6 +37,31 @@ export const ApiConfig = createApi({
       query: () => "/check-address",
       providesTags: ["Config"],
     }),
+
+    // Restore
+    restoreDatabase: builder.mutation({
+      query: (formData) => ({
+        url: "/restore",
+        method: "POST",
+        body: formData,
+      }),
+    }),
+
+    // Get List Tables
+    getTables: builder.query({
+      query: () => "/tables",
+      providesTags: ["Tables"],
+    }),
+
+    // Reset Tables
+    resetTables: builder.mutation({
+      query: (selectedTables) => ({
+        url: "/reset-tables",
+        method: "POST",
+        body: { tables: selectedTables },
+      }),
+      invalidatesTags: ["Tables"],
+    }),
   }),
 });
 
@@ -46,4 +71,7 @@ export const {
   useGetConfigsQuery,
   useSaveConfigsMutation,
   useCheckAddressQuery,
+  useRestoreDatabaseMutation,
+  useGetTablesQuery,
+  useResetTablesMutation,
 } = ApiConfig;

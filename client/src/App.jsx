@@ -26,6 +26,7 @@ import PublicRoute from "./components/protection/PublicRoute";
 import Config from "./module/admin/config/Config";
 import Users from "./module/admin/users/Users";
 import { useGetStoreQuery } from "./service/config/ApiConfig";
+import Database from "./module/admin/database/Database";
 
 const App = () => {
   const { data: store, isLoading } = useGetStoreQuery();
@@ -96,6 +97,7 @@ const App = () => {
             <Route path='/admin-orders' element={<Orders />} />
             <Route path='/admin-reports' element={<Reports />} />
             <Route path='/admin-config' element={<Config />} />
+            <Route path='/admin-database' element={<Database />} />
           </Route>
 
           {/* --- USER ROUTES (Hanya Role: user) --- */}

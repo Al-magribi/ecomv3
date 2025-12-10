@@ -238,6 +238,7 @@ P_USER=${db_user}
 P_HOST=${db_host}
 P_DB=${db_name}
 P_PASSWORD=${db_pass}
+PG_DUMP_PATH=/www/server/pgsql/bin/pg_dump
 # App Domain
 DOMAIN=${app_domain}
 LOCAL=http://localhost:5173
