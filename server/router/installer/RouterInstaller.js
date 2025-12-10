@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 const router = Router();
 const { Client } = pg;
@@ -109,6 +110,8 @@ router.post("/finish", async (req, res) => {
     rajaongkir_key,
     midtrans_server,
     midtrans_client,
+    midtrans_base_url, // <--- TAMBAHKAN INI
+    midtrans_is_production,
     smtp_user,
     smtp_pass,
     install_dummy,
@@ -199,14 +202,20 @@ router.post("/finish", async (req, res) => {
       { key: "store_name", val: store_name },
       { key: "domain", val: app_domain },
       { key: "shipping_origin", val: shipping_origin },
-      { key: "shipping_api", val: rajaongkir_key }, // Typo 'shpping_api' disesuaikan dengan Tables.sql Anda
+      { key: "shipping_api", val: rajaongkir_key },
+
+      // --- Update Bagian Midtrans ---
       { key: "midtrans_server_key", val: midtrans_server },
       { key: "midtrans_client_key", val: midtrans_client },
+      { key: "midtrans_base_url", val: midtrans_base_url }, // <--- BARU
+      { key: "midtrans_is_production", val: midtrans_is_production }, // <--- BARU
+      // ------------------------------
+
       { key: "smtp_user", val: smtp_user },
       { key: "smtp_pass", val: smtp_pass },
       { key: "smtp_from_email", val: smtp_user },
+      { key: "smtp_port", val: 465 },
     ];
-
     for (const item of updates) {
       if (item.val) {
         await client.query(
@@ -222,7 +231,7 @@ router.post("/finish", async (req, res) => {
 
     // H. Generate .env
     const envContent = `PORT=2090
-JWT_SECRET=${require("crypto").randomBytes(32).toString("hex")}
+JWT_SECRET=${crypto.randomBytes(32).toString("hex")}
 MODE=production
 # Database Config
 P_USER=${db_user}
@@ -234,7 +243,7 @@ DOMAIN=${app_domain}
 LOCAL=http://localhost:5173
 `;
 
-    fs.writeFileSync(path.resolve(__dirname, "../../.env"), envContent);
+    fs.writeFileSync(path.resolve(__dirname, "../../../.env"), envContent);
 
     res
       .status(200)
@@ -242,9 +251,14 @@ LOCAL=http://localhost:5173
 
     // I. Auto Restart
     setTimeout(() => {
-      console.log("Instalasi selesai. Merestart server...");
-      process.exit(0);
-    }, 1000);
+      console.log("Instalasi selesai. Memicu restart server...");
+
+      // Trik: Kita "sentuh" file ini sendiri.
+      // Mengupdate waktu modifikasi file akan memaksa Nodemon merestart server
+      // seolah-olah Anda baru saja menekan Ctrl+S.
+      const now = new Date();
+      fs.utimesSync(__filename, now, now);
+    }, 1500);
   } catch (error) {
     console.error("Installation Error:", error);
     if (client) await client.end();

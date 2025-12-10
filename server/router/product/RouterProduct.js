@@ -170,9 +170,9 @@ router.post(
       capital,
       stock,
       weight,
+      imagesToDelete, // <--- MENERIMA STRING JSON ARRAY ID GAMBAR YANG AKAN DIHAPUS
     } = req.body;
 
-    // Validasi dasar
     if (!name || !price || !capital) {
       return res.status(400).json({ message: "Data tidak lengkap" });
     }
@@ -180,9 +180,8 @@ router.post(
     const profit = parseFloat(price) - parseFloat(capital);
     let productId = id;
 
-    // 1. DATABASE OPERATION (Insert / Update Product)
+    // 1. DATABASE OPERATION (Insert / Update Product Data)
     if (productId) {
-      // --- UPDATE ---
       const check = await client.query(
         "SELECT id FROM products WHERE id = $1",
         [productId]
@@ -210,7 +209,6 @@ router.post(
         ]
       );
     } else {
-      // --- CREATE ---
       const insertResult = await client.query(
         `INSERT INTO products 
           (category_id, name, description, price, capital, profit, stock, weight) 
@@ -221,66 +219,64 @@ router.post(
       productId = insertResult.rows[0].id;
     }
 
-    // 2. IMAGE HANDLING (Compress & Save)
-    if (req.files && req.files.length > 0) {
-      // ============================================================
-      // LOGIKA TAMBAHAN: HAPUS GAMBAR LAMA JIKA UPDATE & ADA GAMBAR BARU
-      // ============================================================
-      if (id) {
-        // Jika ini adalah update (karena 'id' dikirim dari body)
-        // A. Ambil path gambar lama dari DB
-        const oldImages = await client.query(
-          "SELECT link FROM images WHERE product_id = $1",
-          [productId]
-        );
+    // ============================================================
+    // 2. IMAGE HANDLING - DELETE SPECIFIC OLD IMAGES
+    // ============================================================
+    if (imagesToDelete) {
+      let idsToDelete = [];
+      try {
+        idsToDelete = JSON.parse(imagesToDelete); // Parse string JSON ke Array
+      } catch (e) {
+        console.error("Gagal parse imagesToDelete", e);
+      }
 
-        // B. Hapus File Fisik
-        for (const img of oldImages.rows) {
-          // Construct absolute path.
-          // Link di DB: /assets/folder/file.jpeg
-          // Lokasi Fisik: [Root]/server/assets/folder/file.jpeg
-          const oldFilePath = path.join(process.cwd(), "server", img.link);
+      if (Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+        // Loop setiap ID untuk dihapus
+        for (const imgId of idsToDelete) {
+          // Ambil path dulu
+          const imgRecord = await client.query(
+            "SELECT link FROM images WHERE id = $1 AND product_id = $2",
+            [imgId, productId]
+          );
 
-          try {
-            if (fs.existsSync(oldFilePath)) {
-              fs.unlinkSync(oldFilePath);
+          if (imgRecord.rows.length > 0) {
+            const link = imgRecord.rows[0].link;
+            // Hapus File Fisik
+            const filePath = path.join(process.cwd(), "server", link);
+            try {
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+              }
+            } catch (err) {
+              console.error(`Gagal menghapus file fisik: ${filePath}`, err);
             }
-          } catch (err) {
-            console.error(`Gagal menghapus file lama: ${oldFilePath}`, err);
-            // Lanjut saja meski gagal hapus file, agar transaksi DB tidak batal
+
+            // Hapus dari Database
+            await client.query("DELETE FROM images WHERE id = $1", [imgId]);
           }
         }
-
-        // C. Hapus Record di Database
-        await client.query("DELETE FROM images WHERE product_id = $1", [
-          productId,
-        ]);
       }
-      // ============================================================
+    }
 
-      // Tentukan path folder: ./server/assets/"nama produk"/
-      // Gunakan sanitizeName agar nama folder aman
+    // ============================================================
+    // 3. IMAGE HANDLING - ADD NEW IMAGES (APPEND)
+    // ============================================================
+    if (req.files && req.files.length > 0) {
       const folderName = sanitizeName(name);
       const targetDir = path.join(process.cwd(), "server/assets", folderName);
 
-      // Buat direktori jika belum ada
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
       }
 
       for (const file of req.files) {
         const uniqueSuffix = uuidv4();
-        // Nama file: image_uuid.jpeg
         const filename = `img_${uniqueSuffix}.jpeg`;
         const outputPath = path.join(targetDir, filename);
-
-        // Simpan URL relatif untuk database
         const dbLink = `/assets/${folderName}/${filename}`;
 
-        // Kompres dan simpan file fisik
         await compressImage(file.buffer, outputPath);
 
-        // Masukkan record ke tabel images
         await client.query(
           "INSERT INTO images (product_id, link) VALUES ($1, $2)",
           [productId, dbLink]

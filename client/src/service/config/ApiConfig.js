@@ -32,6 +32,11 @@ export const ApiConfig = createApi({
       }),
       invalidatesTags: ["Config"], // Auto-refresh data setelah update
     }),
+
+    checkAddress: builder.query({
+      query: () => "/check-address",
+      providesTags: ["Config"],
+    }),
   }),
 });
 
@@ -40,4 +45,5 @@ export const {
   useGetMidConfigQuery,
   useGetConfigsQuery,
   useSaveConfigsMutation,
+  useCheckAddressQuery,
 } = ApiConfig;

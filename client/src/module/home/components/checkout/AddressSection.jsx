@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const AddressSection = ({ activeAddress }) => {
   const navigate = useNavigate();
@@ -41,9 +41,11 @@ const AddressSection = ({ activeAddress }) => {
             <p className="text-muted">
               Anda belum memiliki alamat pengiriman utama.
             </p>
-            <button className="btn btn-primary btn-sm">
-              <i className="bi bi-plus-lg"></i> Tambah Alamat Baru
-            </button>
+            <Link to="/profile">
+              <button className="btn btn-primary btn-sm">
+                <i className="bi bi-plus-lg"></i> Tambah Alamat Baru
+              </button>
+            </Link>
           </div>
         )}
       </div>

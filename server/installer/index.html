@@ -311,13 +311,14 @@
                 </div>
 
                 <h6 class="fw-bold mt-3">Midtrans (Pembayaran)</h6>
-                <div class="row g-2">
+                <div class="row g-2 mb-2">
                   <div class="col-6">
                     <input
                       type="text"
                       class="form-control form-control-sm"
                       name="midtrans_server"
-                      placeholder="Server Key"
+                      placeholder="Server Key (SB-Mid-server...)"
+                      required
                     />
                   </div>
                   <div class="col-6">
@@ -325,7 +326,33 @@
                       type="text"
                       class="form-control form-control-sm"
                       name="midtrans_client"
-                      placeholder="Client Key"
+                      placeholder="Client Key (SB-Mid-client...)"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-4">
+                    <select
+                      class="form-select form-select-sm"
+                      name="midtrans_is_production"
+                      id="midMode"
+                      onchange="changeMidtransUrl()"
+                    >
+                      <option value="false" selected>Sandbox (Test)</option>
+                      <option value="true">Production (Live)</option>
+                    </select>
+                  </div>
+                  <div class="col-8">
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      name="midtrans_base_url"
+                      id="midUrl"
+                      value="https://app.sandbox.midtrans.com"
+                      placeholder="https://app.sandbox.midtrans.com"
+                      readonly
                     />
                   </div>
                 </div>
@@ -523,6 +550,20 @@
           }
         });
         return valid;
+      }
+
+      // Tambahkan fungsi ini di dalam tag <script>
+      function changeMidtransUrl() {
+        const mode = document.getElementById("midMode").value;
+        const urlInput = document.getElementById("midUrl");
+
+        if (mode === "true") {
+          // URL Production Midtrans
+          urlInput.value = "https://app.midtrans.com";
+        } else {
+          // URL Sandbox Midtrans
+          urlInput.value = "https://app.sandbox.midtrans.com";
+        }
       }
 
       // Mock API Call untuk Test DB

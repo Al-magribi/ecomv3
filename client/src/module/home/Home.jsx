@@ -1,45 +1,64 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useGetProductsQuery } from "../../service/product/ApiProduct";
-// Hapus passing props ke Header
 import Header from "../../components/header/Header";
 import Footer from "../../components/footer/Footer";
 import ProductCard from "./components/product/ProductCard";
 import MobileNav from "../../components/layout/MobileNav";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom"; // Tambah useNavigate
 import SingleProduct from "./components/product/SingleProduct";
+import { useCheckAddressQuery } from "../../service/config/ApiConfig";
+import ErrorModal from "./ErrorModal"; // Import ErrorModal
 
 const Home = () => {
+  const navigate = useNavigate(); // Hook untuk navigasi
+
+  // Ambil status error dari API Check Address
+  const { error, isError } = useCheckAddressQuery();
+
+  // State untuk kontrol Modal
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
-
-  // State search ini sekarang dikendalikan oleh URL
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [allProducts, setAllProducts] = useState([]);
   const [hasMore, setHasMore] = useState(true);
-
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Ambil parameter URL
   const single = searchParams.get("single");
-  const querySearch = searchParams.get("q"); // Ambil keyword dari URL ?q=...
+  const querySearch = searchParams.get("q");
 
-  // 1. EFEK BARU: Pantau perubahan URL query (?q=...)
+  // --- LOGIC BARU: Cek Error Alamat Toko ---
+  useEffect(() => {
+    // Jika terjadi error dan statusnya 404 (Not Found)
+    if (isError && error) {
+      if (error.status === 404) {
+        setErrorMessage(error.data?.message || "Alamat toko belum diatur");
+        setShowErrorModal(true);
+      }
+    }
+  }, [isError, error]);
+
+  // Handler untuk tombol di Modal
+  const handleRedirectConfig = () => {
+    navigate("/admin-config");
+  };
+  // ----------------------------------------
+
   useEffect(() => {
     if (querySearch !== null) {
-      setSearch(querySearch); // Update state lokal berdasarkan URL
-      setDebouncedSearch(querySearch); // Langsung set debounce (atau biarkan efek debounce jalan)
-      setPage(1); // Reset page saat search berubah
-      setAllProducts([]); // Reset produk lama
+      setSearch(querySearch);
+      setDebouncedSearch(querySearch);
+      setPage(1);
+      setAllProducts([]);
     } else {
-      // Jika tidak ada query q, berarti user ingin lihat semua produk
       setSearch("");
       setDebouncedSearch("");
     }
   }, [querySearch]);
 
-  // 2. Debounce Logic (Opsional: Tetap berguna jika ada input lokal lain, tapi via URL sudah cukup aman)
-  // Anda bisa menghapus useEffect debounce lama jika sepenuhnya bergantung pada URL enter submit
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -47,7 +66,6 @@ const Home = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // 3. Panggil API
   const { data, isFetching } = useGetProductsQuery({
     page,
     limit,
@@ -96,19 +114,25 @@ const Home = () => {
   );
 
   return (
-    <div className='d-flex flex-column min-vh-100 bg-light'>
-      {/* HAPUS props search={search} setSearch={setSearch} */}
+    <div className="d-flex flex-column min-vh-100 bg-light position-relative">
+      {/* Tampilkan Modal Error jika state true */}
+      <ErrorModal
+        show={showErrorModal}
+        message={errorMessage}
+        onRedirect={handleRedirectConfig}
+      />
+
       <Header />
 
       {single ? (
         <SingleProduct />
       ) : (
         <main
-          className='container flex-grow-1'
+          className="container flex-grow-1"
           style={{ marginBottom: "60px" }}
         >
-          <div className='my-4'>
-            <h4 className='fw-bold text-dark'>
+          <div className="my-4">
+            <h4 className="fw-bold text-dark">
               {debouncedSearch
                 ? `Hasil pencarian: "${debouncedSearch}"`
                 : "Produk Terbaik"}
@@ -116,14 +140,14 @@ const Home = () => {
             <hr />
           </div>
 
-          <div className='row'>
+          <div className="row">
             {allProducts.map((product, index) => {
               const isLastElement = allProducts.length === index + 1;
               return (
                 <div
                   key={product.id}
                   ref={isLastElement ? lastElementRef : null}
-                  className='col-6 col-md-4 col-lg-3 mb-4'
+                  className="col-6 col-md-4 col-lg-3 mb-4"
                 >
                   <ProductCard
                     product={product}
@@ -134,23 +158,23 @@ const Home = () => {
             })}
           </div>
 
-          <div className='text-center py-4'>
+          <div className="text-center py-4">
             {isFetching && (
-              <div className='spinner-border text-primary' role='status'>
-                <span className='visually-hidden'>Loading...</span>
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
               </div>
             )}
 
             {!isFetching &&
               allProducts.length === 0 &&
               (!data?.data || data.data.length === 0) && (
-                <div className='alert alert-warning'>
+                <div className="alert alert-warning">
                   Produk tidak ditemukan.
                 </div>
               )}
 
             {!hasMore && allProducts.length > 0 && (
-              <p className='text-muted small'>
+              <p className="text-muted small">
                 Semua produk sudah ditampilkan.
               </p>
             )}

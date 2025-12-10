@@ -24,8 +24,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
     is_primary: false,
   });
 
-  console.log(formData);
-
   // --- 2. RTK QUERY HOOKS (CHAINED) ---
 
   // A. Fetch Provinsi (Selalu jalan)
@@ -160,95 +158,95 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
 
   return (
     <div
-      className='modal fade show d-block'
+      className="modal fade show d-block"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
-      <div className='modal-dialog modal-lg'>
-        <div className='modal-content'>
-          <div className='modal-header'>
-            <h5 className='modal-title'>
+      <div className="modal-dialog modal-lg">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">
               {initialData ? "Edit Alamat" : "Tambah Alamat Baru"}
             </h5>
             <button
-              type='button'
-              className='btn-close'
+              type="button"
+              className="btn-close"
               onClick={onClose}
               disabled={isSaving}
             ></button>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className='modal-body'>
-              <div className='row g-3'>
+            <div className="modal-body">
+              <div className="row g-3">
                 {/* --- DATA PENERIMA --- */}
-                <div className='col-md-6'>
-                  <label className='form-label fw-bold'>Label Alamat</label>
+                <div className="col-md-6">
+                  <label className="form-label fw-bold">Label Alamat</label>
                   <input
-                    type='text'
-                    name='title'
-                    className='form-control'
-                    placeholder='Contoh: Rumah, Kantor'
+                    type="text"
+                    name="title"
+                    className="form-control"
+                    placeholder="Contoh: Rumah, Kantor"
                     value={formData.title}
                     onChange={handleChange}
                     required
                   />
                 </div>
 
-                <div className='col-md-6'>
-                  <label className='form-label fw-bold'>Nama Penerima</label>
+                <div className="col-md-6">
+                  <label className="form-label fw-bold">Nama Penerima</label>
                   <input
-                    type='text'
-                    name='recipient_name'
-                    className='form-control'
+                    type="text"
+                    name="recipient_name"
+                    className="form-control"
                     value={formData.recipient_name}
                     onChange={handleChange}
                     required
                   />
                 </div>
 
-                <div className='col-md-6'>
-                  <label className='form-label fw-bold'>Nomor Telepon</label>
+                <div className="col-md-6">
+                  <label className="form-label fw-bold">Nomor Telepon</label>
                   <input
-                    type='text'
-                    name='phone'
-                    className='form-control'
+                    type="text"
+                    name="phone"
+                    className="form-control"
                     value={formData.phone}
                     onChange={handleChange}
                     required
                   />
                 </div>
 
-                <div className='col-md-6'>
-                  <label className='form-label fw-bold'>Kode Pos</label>
+                <div className="col-md-6">
+                  <label className="form-label fw-bold">Kode Pos</label>
                   <input
-                    type='text'
-                    name='postal_code'
-                    className='form-control'
+                    type="text"
+                    name="postal_code"
+                    className="form-control"
                     value={formData.postal_code}
                     onChange={handleChange}
                   />
                 </div>
 
                 {/* --- WILAYAH DROPDOWNS --- */}
-                <div className='col-12'>
-                  <hr className='text-muted' />
+                <div className="col-12">
+                  <hr className="text-muted" />
                 </div>
-                <div className='col-12'>
-                  <h6 className='fw-bold text-primary'>Data Wilayah</h6>
+                <div className="col-12">
+                  <h6 className="fw-bold text-primary">Data Wilayah</h6>
                 </div>
 
                 {/* 1. PROVINSI */}
-                <div className='col-md-6'>
-                  <label className='form-label'>Provinsi</label>
+                <div className="col-md-6">
+                  <label className="form-label">Provinsi</label>
                   <select
-                    className='form-select'
-                    name='province_id'
+                    className="form-select"
+                    name="province_id"
                     value={formData.province_id}
                     onChange={handleProvinceChange}
                     disabled={loadProv}
                     required
                   >
-                    <option value=''>-- Pilih Provinsi --</option>
+                    <option value="">-- Pilih Provinsi --</option>
                     {provinces?.map((prov) => (
                       <option key={prov.id} value={prov.id}>
                         {prov.name}
@@ -258,17 +256,17 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                 </div>
 
                 {/* 2. KOTA / KABUPATEN */}
-                <div className='col-md-6'>
-                  <label className='form-label'>Kota / Kabupaten</label>
+                <div className="col-md-6">
+                  <label className="form-label">Kota / Kabupaten</label>
                   <select
-                    className='form-select'
-                    name='regency_id'
+                    className="form-select"
+                    name="regency_id"
                     value={formData.regency_id}
                     onChange={handleRegencyChange}
                     disabled={!formData.province_id || loadCity}
                     required
                   >
-                    <option value=''>-- Pilih Kota/Kab --</option>
+                    <option value="">-- Pilih Kota/Kab --</option>
                     {regencies?.map((city) => (
                       <option key={city.id} value={city.id}>
                         {city.name}
@@ -278,17 +276,17 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                 </div>
 
                 {/* 3. KECAMATAN */}
-                <div className='col-md-6'>
-                  <label className='form-label'>Kecamatan</label>
+                <div className="col-md-6">
+                  <label className="form-label">Kecamatan</label>
                   <select
-                    className='form-select'
-                    name='district_id'
+                    className="form-select"
+                    name="district_id"
                     value={formData.district_id}
                     onChange={handleDistrictChange}
                     disabled={!formData.regency_id || loadDist}
                     required
                   >
-                    <option value=''>-- Pilih Kecamatan --</option>
+                    <option value="">-- Pilih Kecamatan --</option>
                     {districts?.map((dist) => (
                       <option key={dist.id} value={dist.id}>
                         {dist.name}
@@ -298,17 +296,17 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                 </div>
 
                 {/* 4. DESA / KELURAHAN */}
-                <div className='col-md-6'>
-                  <label className='form-label'>Desa / Kelurahan</label>
+                <div className="col-md-6">
+                  <label className="form-label">Desa / Kelurahan</label>
                   <select
-                    className='form-select'
-                    name='village_id'
+                    className="form-select"
+                    name="village_id"
                     value={formData.village_id}
                     onChange={handleChange} // Tidak perlu reset anak lagi
                     disabled={!formData.district_id || loadVill}
                     required
                   >
-                    <option value=''>-- Pilih Desa --</option>
+                    <option value="">-- Pilih Desa --</option>
                     {villages?.map((vill) => (
                       <option key={vill.id} value={vill.id}>
                         {vill.name}
@@ -318,14 +316,14 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                 </div>
 
                 {/* --- DETAIL ALAMAT --- */}
-                <div className='col-12'>
-                  <label className='form-label fw-bold'>
+                <div className="col-12">
+                  <label className="form-label fw-bold">
                     Alamat Lengkap (Jalan, RT/RW, No. Rumah)
                   </label>
                   <textarea
-                    name='detail'
-                    className='form-control'
-                    rows='3'
+                    name="detail"
+                    className="form-control"
+                    rows="3"
                     value={formData.detail}
                     onChange={handleChange}
                     required
@@ -333,18 +331,18 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                 </div>
 
                 {/* --- IS PRIMARY --- */}
-                <div className='col-12'>
-                  <div className='form-check'>
+                <div className="col-12">
+                  <div className="form-check">
                     <input
-                      className='form-check-input'
-                      type='checkbox'
-                      id='isPrimaryCheck'
+                      className="form-check-input"
+                      type="checkbox"
+                      id="isPrimaryCheck"
                       checked={formData.is_primary}
                       onChange={handleCheck}
                     />
                     <label
-                      className='form-check-label'
-                      htmlFor='isPrimaryCheck'
+                      className="form-check-label"
+                      htmlFor="isPrimaryCheck"
                     >
                       Jadikan Alamat Utama
                     </label>
@@ -353,26 +351,26 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
               </div>
             </div>
 
-            <div className='modal-footer'>
+            <div className="modal-footer">
               <button
-                type='button'
-                className='btn btn-secondary'
+                type="button"
+                className="btn btn-secondary"
                 onClick={onClose}
                 disabled={isSaving}
               >
                 Batal
               </button>
               <button
-                type='submit'
-                className='btn btn-primary'
+                type="submit"
+                className="btn btn-primary"
                 disabled={isSaving}
               >
                 {isSaving ? (
                   <>
                     <span
-                      className='spinner-border spinner-border-sm me-2'
-                      role='status'
-                      aria-hidden='true'
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
                     ></span>
                     Menyimpan...
                   </>

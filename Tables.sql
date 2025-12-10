@@ -1,3 +1,4 @@
+-- Active: 1711729586887@@127.0.0.1@5432@ecom
 CREATE TABLE configurations (
     id SERIAL PRIMARY KEY,
     key VARCHAR(100) UNIQUE NOT NULL, -- Nama variabel (misal: midtrans_server_key)
@@ -74,7 +75,7 @@ CREATE TABLE districts (
 );
 
 CREATE TABLE villages (
-    id CHAR(10) PRIMARY KEY,
+    id CHAR(12) PRIMARY KEY,
     district_id CHAR(7) REFERENCES districts(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL
 );
@@ -84,7 +85,7 @@ CREATE TABLE couriers(
     courier VARCHAR(100),
     code VARCHAR(30),
     isactive BOOLEAN DEFAULT true
-)
+);
 
 -- 2. TABEL USERS
 CREATE TABLE users (
@@ -113,6 +114,7 @@ CREATE TABLE addresses (
     regency_id CHAR(4) REFERENCES regencies(id),
     district_id CHAR(7) REFERENCES districts(id),
     village_id CHAR(10) REFERENCES villages(id),
+    shipping_id INTEGER,
     detail TEXT NOT NULL,
     postal_code VARCHAR(10),
     is_primary BOOLEAN DEFAULT false,

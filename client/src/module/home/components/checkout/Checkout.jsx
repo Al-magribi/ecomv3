@@ -155,7 +155,7 @@ const Checkout = () => {
           onSuccess: function (result) {
             updateOrderStatus({
               inv: result.order_id,
-              status: "completed",
+              status: "paid",
               method: result.payment_type || "unknown",
             });
 
@@ -200,20 +200,20 @@ const Checkout = () => {
 
   if (isCartLoading || isConfigLoading) {
     return (
-      <div className='container mt-5 text-center'>
-        <div className='spinner-border text-primary'></div>
-        <p className='mt-2'>Memuat data...</p>
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary"></div>
+        <p className="mt-2">Memuat data...</p>
       </div>
     );
   }
 
   return (
-    <div className='d-flex flex-column min-vh-100 bg-light'>
+    <div className="d-flex flex-column min-vh-100 bg-light">
       <Header />
-      <div className='container py-4'>
-        <h2 className='mb-4 fw-bold'>Pengiriman & Pembayaran</h2>
-        <div className='row g-4'>
-          <div className='col-lg-8'>
+      <div className="container py-4">
+        <h2 className="mb-4 fw-bold">Pengiriman & Pembayaran</h2>
+        <div className="row g-4">
+          <div className="col-lg-8">
             <AddressSection activeAddress={activeAddress} />
             <OrderItems items={checkoutItems} formatRupiah={formatRupiah} />
             <ShippingMethod
@@ -224,23 +224,23 @@ const Checkout = () => {
             />
           </div>
 
-          <div className='col-lg-4'>
+          <div className="col-lg-4">
             <div
-              className='card shadow-sm border-0 sticky-top z-3'
+              className="card shadow-sm border-0 sticky-top z-3"
               style={{ top: "20px" }}
             >
-              <div className='card-header bg-white py-3'>
-                <h5 className='mb-0 fw-bold'>Ringkasan Belanja</h5>
+              <div className="card-header bg-white py-3">
+                <h5 className="mb-0 fw-bold">Ringkasan Belanja</h5>
               </div>
-              <div className='card-body'>
-                <div className='d-flex justify-content-between mb-2'>
-                  <span className='text-muted'>
+              <div className="card-body">
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-muted">
                     Total Harga ({checkoutItems.length} barang)
                   </span>
                   <span>{formatRupiah(subTotal)}</span>
                 </div>
-                <div className='d-flex justify-content-between mb-3'>
-                  <span className='text-muted'>Total Ongkos Kirim</span>
+                <div className="d-flex justify-content-between mb-3">
+                  <span className="text-muted">Total Ongkos Kirim</span>
                   <span
                     className={
                       shippingFee > 0 ? "text-dark fw-bold" : "text-danger"
@@ -251,7 +251,7 @@ const Checkout = () => {
                 </div>
 
                 {selectedService && (
-                  <div className='d-flex justify-content-between mb-3 small text-muted'>
+                  <div className="d-flex justify-content-between mb-3 small text-muted">
                     <span>Estimasi Tiba</span>
                     <span>{selectedService.etd} Hari</span>
                   </div>
@@ -259,15 +259,15 @@ const Checkout = () => {
 
                 <hr style={{ borderStyle: "dashed" }} />
 
-                <div className='d-flex justify-content-between mb-4 align-items-center'>
-                  <span className='fw-bold fs-5'>Total Tagihan</span>
-                  <span className='fw-bold fs-4 text-primary'>
+                <div className="d-flex justify-content-between mb-4 align-items-center">
+                  <span className="fw-bold fs-5">Total Tagihan</span>
+                  <span className="fw-bold fs-4 text-primary">
                     {formatRupiah(grandTotal)}
                   </span>
                 </div>
 
                 <button
-                  className='btn btn-primary w-100 py-3 fw-bold shadow'
+                  className="btn btn-primary w-100 py-3 fw-bold shadow"
                   onClick={handlePayment}
                   disabled={
                     !selectedCourier ||
@@ -278,7 +278,7 @@ const Checkout = () => {
                 >
                   {isCreatingOrder ? (
                     <>
-                      <span className='spinner-border spinner-border-sm me-2'></span>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
                       Memproses...
                     </>
                   ) : (

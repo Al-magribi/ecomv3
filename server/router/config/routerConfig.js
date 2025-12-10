@@ -142,4 +142,28 @@ router.get(
   })
 );
 
+router.get(
+  "/check-address",
+  withQuery(async (req, res, pool) => {
+    const admin = await pool.query(
+      "SELECT id FROM users WHERE role = 'admin' LIMIT 1"
+    );
+
+    const adminId = admin.rows[0].id;
+
+    const adminAddress = await pool.query(
+      "SELECT * FROM addresses WHERE user_id = $1 AND is_primary = true",
+      [adminId]
+    );
+
+    if (adminAddress.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "Pengaturan alamat toko belum diatur" });
+    }
+
+    res.status(200);
+  })
+);
+
 export default router;

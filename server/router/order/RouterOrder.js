@@ -58,7 +58,7 @@ router.get(
         o.shipping_address_detail,
         o.shipping_postal_code,
         u.name as user_account_name, -- Nama akun yang order
-        u.phone as user_phone, -- Nomor telepon akun yang order
+        a.phone as user_phone, -- Nomor telepon akun yang order
         
         -- Join untuk mengambil Nama Wilayah (Readable)
         prov.name as shipping_province_name,
@@ -88,6 +88,7 @@ router.get(
 
       FROM orders o
       LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN addresses a ON u.id = a.user_id AND a.is_primary
       -- Join Wilayah
       LEFT JOIN provinces prov ON o.shipping_province_id = prov.id
       LEFT JOIN regencies reg ON o.shipping_regency_id = reg.id
@@ -209,6 +210,7 @@ router.get(
         o.shipping_courier, 
         o.shipping_service,
         o.shipping_fee,
+        o.shipping_number,
         
         -- Info Penerima & Alamat Snapshot
         o.recipient_name,

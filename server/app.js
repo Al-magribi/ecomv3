@@ -1,4 +1,4 @@
-//
+// app.js
 import express from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
@@ -17,8 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Cek status Instalasi berdasarkan keberadaan file .env di root project
-// Asumsi: app.js ada di folder server/, jadi .env ada di satu level di atasnya (../.env)
+// Cek status Instalasi
 const envPath = path.resolve(__dirname, "../.env");
 const isInstalled = fs.existsSync(envPath);
 
@@ -30,15 +29,15 @@ console.log(
 
 if (!isInstalled) {
   // ==========================================
-  // MODE 1: INSTALLER (Database Belum Setup)
+  // MODE 1: INSTALLER
   // ==========================================
 
-  // 1. API Khusus Installer
-  app.use("/api/install", RouterInstaller);
+  // Pastikan folder ini sesuai struktur folder Anda
+  // Jika app.js ada di /server, maka installer ada di /server/installer
+  const installerPath = path.join(__dirname, "installer");
 
-  // 2. Serve UI Installer (File HTML Wizard yang Anda buat sebelumnya)
-  // Pastikan folder 'installer/public' ada dan berisi index.html
-  app.use(express.static(path.join(__dirname, "installer")));
+  app.use("/api/install", RouterInstaller);
+  app.use(express.static(installerPath)); // Serve static files installer (css/js)
 
   // Catch-all untuk installer
   app.get("/{*splat}", (req, res) => {
@@ -46,14 +45,20 @@ if (!isInstalled) {
   });
 } else {
   // ==========================================
-  // MODE 2: PRODUCTION (Toko Online Aktif)
+  // MODE 2: PRODUCTION
   // ==========================================
 
-  // Gunakan IIFE async untuk load router secara dinamis agar tidak crash saat DB belum connect
   (async () => {
     try {
-      // Import Router Utama (Hanya di-load jika sudah install)
-      // Menggunakan 'await import' mencegah error koneksi DB saat fase install
+      // 1. LOAD DATABASE HANYA DI SINI
+      // Menggunakan dynamic import agar tidak tereksekusi di mode Installer
+      const { default: pool } = await import("./config/database.js");
+
+      // Test koneksi sekilas (opsional)
+      await pool.query("SELECT NOW()");
+      console.log("[DB] Database Connected Successfully");
+
+      // 2. Load Routers
       const { default: RouterConfig } = await import(
         "./router/config/routerConfig.js"
       );
@@ -79,7 +84,6 @@ if (!isInstalled) {
         "./router/report/RouterReport.js"
       );
 
-      // Serve Static Assets (Gambar Upload)
       app.use("/assets", express.static(path.join(__dirname, "assets")));
 
       // Mount API Routes
@@ -92,15 +96,14 @@ if (!isInstalled) {
       app.use("/api/cart", RouterCart);
       app.use("/api/report", RouterReport);
 
-      // Serve React Frontend (Hasil Build Vite)
-      // Asumsi hasil build ada di folder client/dist atau sejajar di folder 'public'
+      // 3. Serve React Frontend
       const clientDistPath = path.resolve(__dirname, "../client/dist");
 
       if (fs.existsSync(clientDistPath)) {
         app.use(express.static(clientDistPath));
 
-        // React Router Handler (SPA)
-        // Redirect semua request yg bukan API ke index.html React
+        // FIX: Gunakan '*' untuk Express 4/5 standard wildcard
+        // Syntax `/{*splat}` biasanya untuk Fastify atau router library tertentu, bukan Express native.
         app.get("/{*splat}", (req, res) => {
           res.sendFile(path.join(clientDistPath, "index.html"));
         });

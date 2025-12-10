@@ -1,99 +1,84 @@
 import nodemailer from "nodemailer";
+import pool from "../config/database.js";
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  service: "gmail",
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS, // Pastikan ini menggunakan Sandi Aplikasi
-  },
-});
+const getSmtpConfig = async () => {
+  const query = "SELECT key, value FROM configurations WHERE category = 'smtp'";
+  const result = await pool.query(query);
 
-// Send activation email
+  const config = result.rows.reduce((acc, row) => {
+    acc[row.key] = row.value;
+    return acc;
+  }, {});
+
+  return config;
+};
+
 export const sendActivationEmail = async (email, name, activationCode, url) => {
+  const config = await getSmtpConfig();
+
+  if (!config.smtp_host || !config.smtp_user || !config.smtp_pass) {
+    throw new Error("Konfigurasi SMTP belum lengkap di Database.");
+  }
+
+  const port = parseInt(config.smtp_port);
+
+  // LOGIKA: Jika port 465, gunakan SSL (secure: true). Selain itu false.
+  const isSecure = port === 465;
+
+  const transporter = nodemailer.createTransport({
+    host: config.smtp_host,
+    port: port,
+    secure: isSecure,
+    auth: {
+      user: config.smtp_user,
+      pass: config.smtp_pass,
+    },
+    // Konfigurasi tambahan untuk stabilitas koneksi
+    tls: {
+      rejectUnauthorized: false, // Mencegah error sertifikat
+    },
+    // Penambahan timeout agar tidak error "Greeting never received" terlalu cepat
+    connectionTimeout: 10000, // 10 detik
+    greetingTimeout: 10000, // 10 detik
+    socketTimeout: 10000, // 10 detik
+  });
+
   const activationUrl = `${url}/activation/${activationCode}`;
 
+  // Fallback jika nama pengirim kosong
+  const senderName = config.smtp_from_name;
+  const senderEmail = config.smtp_user;
+  const fromSender = `"${senderName}" <${senderEmail}>`;
+
   const mailOptions = {
-    from: process.env.SMTP_APP,
+    from: fromSender,
     to: email,
     subject: "Aktivasi Akun",
     html: `
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktivasi Akun</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-    }
-    .email-container {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border: 1px solid #dddddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .header {
-      background-color: #007BFF;
-      color: #ffffff;
-      text-align: center;
-      padding: 20px;
-    }
-    .content {
-      padding: 20px;
-      color: #333333;
-      line-height: 1.6;
-    }
-    .button {
-      display: inline-block;
-      margin: 20px 0;
-      padding: 10px 20px;
-      background-color: #007BFF;
-      color: #ffffff;
-      text-decoration: none;
-      border-radius: 5px;
-    }
-    .footer {
-      background-color: #f4f4f4;
-      text-align: center;
-      padding: 10px;
-      font-size: 12px;
-      color: #888888;
-    }
-    @media (max-width: 600px) {
-      .content {
-        font-size: 14px;
-      }
-    }
+    body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+    .container { background-color: #fff; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; border: 1px solid #ddd; }
+    .btn { background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; font-weight: bold;}
+    .footer { margin-top: 20px; font-size: 12px; color: #888; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="email-container">
-    <div class="header">
-      <h1>Aktivasi Akun Anda</h1>
+  <div class="container">
+    <h2 style="color: #333;">Selamat Datang, ${name}!</h2>
+    <p>Terima kasih telah mendaftar di <b>${senderName}</b>. Langkah terakhir untuk mengaktifkan akun Anda adalah dengan mengklik tombol di bawah ini:</p>
+    
+    <div style="text-align: center;">
+      <a href="${activationUrl}" class="btn">Aktivasi Akun Saya</a>
     </div>
-    <div class="content">
-      <p>Halo ${name},</p>
-      <p>Terima kasih telah mendaftar di platform kami. Kami sangat senang Anda bergabung. Untuk mengaktifkan akun Anda, silakan klik tombol di bawah ini:</p>
-      
-      <div style="text-align: center;">
-        <a href="${activationUrl}" class="button">Aktivasi Akun</a>
-      </div>
 
-      <p>Jika Anda memiliki pertanyaan, jangan ragu untuk membalas email ini. Kami di sini untuk membantu!</p>
-      <p>Link ini akan kadaluarsa dalam 24 jam.</p>
-    </div>
+    <p style="margin-top: 30px;">Jika tombol di atas tidak berfungsi, salin dan tempel tautan berikut ke browser Anda:</p>
+    <p style="background: #eee; padding: 10px; word-break: break-all; font-family: monospace;">${activationUrl}</p>
+    
     <div class="footer">
-      <p>&copy; ${new Date().getFullYear()} TOSERBA</p>
+      <p>Link ini valid selama 24 jam.<br>&copy; ${new Date().getFullYear()} ${senderName}</p>
     </div>
   </div>
 </body>
@@ -101,7 +86,18 @@ export const sendActivationEmail = async (email, name, activationCode, url) => {
     `,
   };
 
-  // HAPUS try...catch di sini. Biarkan error dilempar ke router.
+  // Coba verifikasi koneksi dulu (Opsional, untuk debugging di console server)
+  try {
+    await transporter.verify();
+    console.log(`✅ SMTP Connected to ${config.smtp_host}:${port}`);
+  } catch (err) {
+    console.error("❌ SMTP Connection Failed:", err.message);
+    // Kita throw error agar Transaction di RouterAuth melakukan ROLLBACK
+    throw new Error(
+      "Gagal terhubung ke server email. Silakan coba lagi nanti."
+    );
+  }
+
   await transporter.sendMail(mailOptions);
-  return true; // Jika sukses
+  return true;
 };
