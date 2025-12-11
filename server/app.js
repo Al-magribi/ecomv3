@@ -77,6 +77,9 @@ if (!isInstalled) {
       const { default: RouterOrder } = await import(
         "./router/order/RouterOrder.js"
       );
+      const { default: RouterReview } = await import(
+        "./router/order/RouterReview.js"
+      );
       const { default: RouterCart } = await import(
         "./router/cart/RouterCart.js"
       );
@@ -93,6 +96,7 @@ if (!isInstalled) {
       app.use("/api/category", RouterCategory);
       app.use("/api/address", RouterAddress);
       app.use("/api/order", RouterOrder);
+      app.use("/api/review", RouterReview);
       app.use("/api/cart", RouterCart);
       app.use("/api/report", RouterReport);
 

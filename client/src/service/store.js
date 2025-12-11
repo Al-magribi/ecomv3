@@ -7,6 +7,7 @@ import { ApiProduct } from "./product/ApiProduct";
 import { ApiCategory } from "./product/ApiCategory";
 import { ApiAddress } from "./address/ApiAddress";
 import { ApiOrder } from "./order/ApiOrder";
+import { ApiReview } from "./order/ApiReview";
 import { ApiCart } from "./cart/ApiCart";
 import { ApiReport } from "./reports/ApiReport";
 
@@ -19,6 +20,7 @@ const store = configureStore({
     [ApiCategory.reducerPath]: ApiCategory.reducer,
     [ApiAddress.reducerPath]: ApiAddress.reducer,
     [ApiOrder.reducerPath]: ApiOrder.reducer,
+    [ApiReview.reducerPath]: ApiReview.reducer,
     [ApiCart.reducerPath]: ApiCart.reducer,
     [ApiReport.reducerPath]: ApiReport.reducer,
   },
@@ -31,10 +33,11 @@ const store = configureStore({
       ApiCategory.middleware,
       ApiAddress.middleware,
       ApiOrder.middleware,
+      ApiReview.middleware,
       ApiCart.middleware,
       ApiReport.middleware,
     ]),
-  devTools: import.meta.env.VITE_MODE === "dev" ? true : false,
+  devTools: true,
 });
 
 export default store;
