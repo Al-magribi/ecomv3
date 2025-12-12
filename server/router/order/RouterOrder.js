@@ -799,4 +799,190 @@ router.post(
   })
 );
 
+// ============================================================================
+// MIDTRANS NOTIFICATION WEBHOOK
+// ============================================================================
+router.post(
+  "/midtrans-notification",
+  withTransaction(async (req, res, client) => {
+    try {
+      const data = req.body;
+      console.log(
+        "Midtrans Notification Received:",
+        JSON.stringify(data, null, 2)
+      );
+
+      // ----------------------------------------------------------------------
+      // 1. VALIDASI & FILTER TIPE NOTIFIKASI
+      // ----------------------------------------------------------------------
+
+      // Jika data kosong
+      if (!data) {
+        return res.status(200).json({ message: "No data received" });
+      }
+
+      // HANDLE "RECURRING / SUBSCRIPTION" TEST
+      // Notifikasi langganan punya field 'schedule', tapi TIDAK punya 'order_id'
+      if (data.schedule && !data.order_id) {
+        console.log("[Midtrans] Subscription/Recurring notification ignored.");
+        // Kita return 200 OK agar dashboard Midtrans mencatat "Test Successful"
+        return res
+          .status(200)
+          .json({ message: "Subscription notification ignored" });
+      }
+
+      // HANDLE "ACCOUNT LINKING" TEST
+      // Notifikasi linking biasanya punya 'pay_account_status' atau tidak ada order_id
+      if (
+        data.payment_type === "account_linking" ||
+        (!data.order_id && data.account_id)
+      ) {
+        console.log("[Midtrans] Account linking notification ignored.");
+        return res
+          .status(200)
+          .json({ message: "Account linking notification ignored" });
+      }
+
+      // CEK ORDER_ID WAJIB ADA (Untuk Transaksi Toko)
+      // Jika sampai di sini tapi order_id masih tidak ada, kita skip aman.
+      if (!data.order_id) {
+        console.warn("[Midtrans] Payload missing order_id. Ignored.");
+        return res
+          .status(200)
+          .json({ message: "Invalid payload: order_id missing" });
+      }
+
+      // ----------------------------------------------------------------------
+      // 2. PROSES TRANSAKSI TOKO (ORDER)
+      // ----------------------------------------------------------------------
+      const orderId = data.order_id; // Invoice Number
+      const transactionStatus = data.transaction_status;
+      const fraudStatus = data.fraud_status;
+
+      // Filter Test Notification bawaan Payment (Biasanya format order_id ada 'test')
+      if (
+        orderId.includes("payment_notif_test_") ||
+        orderId.startsWith("test-")
+      ) {
+        return res.status(200).json({
+          status: "success",
+          message: "Payment test notification ignored",
+        });
+      }
+
+      // Cek apakah order ada di database
+      const checkOrder = await client.query(
+        "SELECT id, status FROM orders WHERE invoice_number = $1",
+        [orderId]
+      );
+
+      if (checkOrder.rows.length === 0) {
+        console.warn(`[Notification] Order ${orderId} not found in DB.`);
+        // Return 404 supaya Midtrans mencoba kirim ulang nanti (siapa tahu delay DB)
+        return res.status(404).json({ message: "Order not found (Retrying)" });
+      }
+
+      const currentDbStatus = checkOrder.rows[0].status;
+
+      // Fungsi Helper Update Status
+      const updateStatusOrder = async (midtransStatus, invoice) => {
+        let newStatus = "pending";
+        let shouldRestoreStock = false;
+
+        if (midtransStatus === "capture" || midtransStatus === "settlement") {
+          newStatus = "paid";
+        } else if (midtransStatus === "pending") {
+          newStatus = "pending";
+        } else if (["cancel", "deny", "expire"].includes(midtransStatus)) {
+          newStatus = "cancelled";
+          shouldRestoreStock = true;
+        } else if (midtransStatus === "failure") {
+          newStatus = "cancelled";
+          shouldRestoreStock = true;
+        }
+
+        // Cegah update jika status DB sudah final
+        if (["completed", "cancelled", "shipped"].includes(currentDbStatus)) {
+          console.log(
+            `Order ${invoice} status is final (${currentDbStatus}). Skip update.`
+          );
+          return;
+        }
+
+        // Eksekusi Update
+        await client.query(
+          `UPDATE orders SET status = $1, updated_at = NOW() WHERE invoice_number = $2`,
+          [newStatus, invoice]
+        );
+
+        // Restock jika cancel
+        if (shouldRestoreStock && currentDbStatus !== "cancelled") {
+          await restoreStock(invoice, client);
+        }
+      };
+
+      // Logika Mapping Status Midtrans
+      if (transactionStatus === "capture") {
+        if (fraudStatus === "accept") {
+          await updateStatusOrder(transactionStatus, orderId);
+        }
+      } else if (transactionStatus === "settlement") {
+        await updateStatusOrder(transactionStatus, orderId);
+      } else if (
+        ["cancel", "deny", "expire", "pending"].includes(transactionStatus)
+      ) {
+        await updateStatusOrder(transactionStatus, orderId);
+      }
+
+      res.status(200).json({ status: "success", message: "OK" });
+    } catch (error) {
+      console.error("Error Notification:", error);
+      // Jangan return 500 jika error kodingan, nanti midtrans spam hit.
+      // Cukup log error server.
+      res.status(500).json({ message: error.message });
+    }
+  })
+);
+
+// ============================================================================
+// HELPER FUNCTION: RESTORE STOCK
+// Mengembalikan stok ke tabel products & product_variants
+// ============================================================================
+async function restoreStock(invoiceNumber, client) {
+  // 1. Ambil detail item dari order ini
+  const itemsQuery = `
+    SELECT oi.product_id, oi.product_variant_id, oi.quantity
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    WHERE o.invoice_number = $1
+  `;
+  const items = await client.query(itemsQuery, [invoiceNumber]);
+
+  for (const item of items.rows) {
+    // 2. Kembalikan stok Varian (jika ada)
+    if (item.product_variant_id) {
+      await client.query(
+        `UPDATE product_variants SET stock = stock + $1 WHERE id = $2`,
+        [item.quantity, item.product_variant_id]
+      );
+    }
+
+    // 3. Kembalikan stok Produk Utama (Master Stock)
+    // Sesuai logika di Tables.sql, stok produk induk juga harus disesuaikan
+    // (baik itu penjumlahan varian atau stok produk simple)
+    await client.query(`UPDATE products SET stock = stock + $1 WHERE id = $2`, [
+      item.quantity,
+      item.product_id,
+    ]);
+
+    // 4. Kurangi sold_count (karena batal terjual)
+    await client.query(
+      `UPDATE products SET sold_count = GREATEST(sold_count - $1, 0) WHERE id = $2`,
+      [item.quantity, item.product_id]
+    );
+  }
+
+  console.log(`[Info] Stock restored for invoice: ${invoiceNumber}`);
+}
+
 export default router;

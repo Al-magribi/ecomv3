@@ -6,12 +6,6 @@ import LoadingScreen from "../loader/LoadingScreen";
 const ProtectedRoute = ({ allowedRoles }) => {
   const { user, isLoading } = useSelector((state) => state.auth);
 
-  // 1. TUNGGU DATA USER (Penting: agar tidak redirect prematur)
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  // 2. JIKA TIDAK ADA USER -> LEMPAR KE SIGNIN
   if (!user) {
     return <Navigate to='/signin' replace />;
   }

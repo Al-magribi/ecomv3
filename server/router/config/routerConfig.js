@@ -84,29 +84,50 @@ router.put(
       }
 
       for (const file of req.files) {
-        const key = file.fieldname; // fieldname harus sesuai dengan 'key' di DB (misal: store_logo)
+        const key = file.fieldname;
 
-        // 1. Validasi: Pastikan key ini memang bertipe 'image' di database
+        // 1. Validasi & AMBIL DATA LAMA:
+        // Kita perlu select 'value' juga untuk tahu path file lama
         const check = await client.query(
-          "SELECT id FROM configurations WHERE key = $1 AND type = 'image'",
+          "SELECT id, value FROM configurations WHERE key = $1 AND type = 'image'",
           [key]
         );
 
         if (check.rows.length > 0) {
-          // 2. Proses Simpan File
+          // --- LOGIKA HAPUS FILE LAMA (BARU DITAMBAHKAN) ---
+          const oldDbPath = check.rows[0].value; // Contoh: /assets/shop/logo_123.png
+
+          if (oldDbPath) {
+            // Konversi URL path database ke System path
+            // Asumsi struktur: process.cwd() + /server + /assets/shop/...
+            const oldFilePath = path.join(process.cwd(), "server", oldDbPath);
+
+            try {
+              if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath); // Hapus file fisik lama
+              }
+            } catch (err) {
+              console.error(`Gagal menghapus file lama (${oldFilePath}):`, err);
+              // Lanjut saja, jangan throw error agar proses update tetap jalan
+            }
+          }
+          // ---------------------------------------------------
+
+          // 2. Proses Simpan File BARU
           const ext = path.extname(file.originalname).toLowerCase();
-          const filename = `${key}_${Date.now()}${ext}`; // Timestamp agar cache refresh
+          const filename = `${key}_${Date.now()}${ext}`;
           const outputPath = path.join(targetDir, filename);
           const dbLink = `/assets/shop/${filename}`;
 
           // Kompres jika gambar, simpan biasa jika ico/svg
           if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+            // Pastikan fungsi compressImage sudah tersedia/diimport
             await compressImage(file.buffer, outputPath);
           } else {
             fs.writeFileSync(outputPath, file.buffer);
           }
 
-          // 3. Update Database Path
+          // 3. Update Database Path dengan file baru
           await client.query(
             "UPDATE configurations SET value = $1, updated_at = NOW() WHERE key = $2",
             [dbLink, key]

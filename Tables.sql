@@ -16,13 +16,13 @@ INSERT INTO configurations (category, key, value, description, type) VALUES
 ('store', 'store_address', 'Jl. Raya Bogor No. 123, Jawa Barat, Indonesia', 'Alamat Lengkap Toko', 'text'),
 ('store', 'store_logo', '/assets/shop/logo.png', 'URL Logo Toko', 'image'),
 ('store', 'store_favicon', '/assets/shop/favicon.png', 'URL Favicon Toko', 'image'),
-('payment', 'midtrans_server_key', 'SB-Mid-server-xxxxxxxx', 'Midtrans Server Key', 'string'),
-('payment', 'midtrans_client_key', 'SB-Mid-client-xxxxxxxx', 'Midtrans Client Key', 'string'),
-('payment', 'midtrans_merchant_id', 'Gxxxxxxxx', 'Midtrans Merchant ID', 'string'),
+('payment', 'midtrans_server_key', 'SB-Mid-server-xxxxxxxx', 'Midtrans Server Key', 'password'),
+('payment', 'midtrans_client_key', 'SB-Mid-client-xxxxxxxx', 'Midtrans Client Key', 'password'),
+('payment', 'midtrans_merchant_id', 'Gxxxxxxxx', 'Midtrans Merchant ID', 'password'),
 ('payment', 'midtrans_base_url', 'https://app.sandbox.midtrans.com', 'Midtrans API Base URL', 'string'),
 ('payment', 'midtrans_is_production', 'false', 'Status Production (true/false)', 'boolean'),
 ('smtp', 'smtp_host', 'smtp.gmail.com', 'SMTP Host Server', 'string'),
-('smtp', 'smtp_port', '25', 'SMTP Port', 'number'),
+('smtp', 'smtp_port', '465', 'SMTP Port', 'number'),
 ('smtp', 'smtp_user', 'almagribi.appdev@gmail.com', 'SMTP Email User', 'string'),
 ('smtp', 'smtp_pass', 'xxxxxxxx', 'SMTP App Password', 'password'), -- Tipe 'password' agar di UI frontend inputnya titik-titik (hidden)
 ('smtp', 'smtp_from_email', 'no-reply@toserba.com', 'Email Pengirim', 'string'),
@@ -168,8 +168,8 @@ CREATE TABLE reviews (
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
-    replay TEXT,
-    replay_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'Asia/Jakarta'),
+    reply TEXT,
+    reply_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'Asia/Jakarta')
 );
 

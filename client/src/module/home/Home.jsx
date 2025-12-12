@@ -43,7 +43,7 @@ const Home = () => {
 
   // Handler untuk tombol di Modal
   const handleRedirectConfig = () => {
-    navigate("/admin-config");
+    navigate("/signin");
   };
   // ----------------------------------------
 
@@ -114,7 +114,7 @@ const Home = () => {
   );
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-light position-relative">
+    <div className='d-flex flex-column min-vh-100 bg-light position-relative'>
       {/* Tampilkan Modal Error jika state true */}
       <ErrorModal
         show={showErrorModal}
@@ -128,11 +128,11 @@ const Home = () => {
         <SingleProduct />
       ) : (
         <main
-          className="container flex-grow-1"
+          className='container flex-grow-1'
           style={{ marginBottom: "60px" }}
         >
-          <div className="my-4">
-            <h4 className="fw-bold text-dark">
+          <div className='my-4'>
+            <h4 className='fw-bold text-dark'>
               {debouncedSearch
                 ? `Hasil pencarian: "${debouncedSearch}"`
                 : "Produk Terbaik"}
@@ -140,14 +140,14 @@ const Home = () => {
             <hr />
           </div>
 
-          <div className="row">
+          <div className='row'>
             {allProducts.map((product, index) => {
               const isLastElement = allProducts.length === index + 1;
               return (
                 <div
                   key={product.id}
                   ref={isLastElement ? lastElementRef : null}
-                  className="col-6 col-md-4 col-lg-3 mb-4"
+                  className='col-6 col-md-4 col-lg-3 mb-4'
                 >
                   <ProductCard
                     product={product}
@@ -158,23 +158,23 @@ const Home = () => {
             })}
           </div>
 
-          <div className="text-center py-4">
+          <div className='text-center py-4'>
             {isFetching && (
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
+              <div className='spinner-border text-primary' role='status'>
+                <span className='visually-hidden'>Loading...</span>
               </div>
             )}
 
             {!isFetching &&
               allProducts.length === 0 &&
               (!data?.data || data.data.length === 0) && (
-                <div className="alert alert-warning">
+                <div className='alert alert-warning'>
                   Produk tidak ditemukan.
                 </div>
               )}
 
             {!hasMore && allProducts.length > 0 && (
-              <p className="text-muted small">
+              <p className='text-muted small'>
                 Semua produk sudah ditampilkan.
               </p>
             )}
