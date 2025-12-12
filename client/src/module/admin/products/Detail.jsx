@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useGetProductQuery } from "../../../service/product/ApiProduct";
+import Reviews from "./Reviews";
 
 const Detail = ({ productId, onBack }) => {
   const { data: product, isLoading, isError } = useGetProductQuery(productId);
   const [activeImage, setActiveImage] = useState("");
+
+  console.log(product);
 
   // Set gambar utama saat data selesai dimuat
   useEffect(() => {
@@ -124,10 +127,6 @@ const Detail = ({ productId, onBack }) => {
                   <i className='bi bi-star-fill me-1'></i>
                   {product.rating || 0} / 5.0
                 </span>
-              </div>
-              <div className='d-flex justify-content-between'>
-                <span className='text-muted'>Dilihat</span>
-                <span className='fw-bold'>- kali</span>
               </div>
             </div>
           </div>
@@ -251,59 +250,7 @@ const Detail = ({ productId, onBack }) => {
           )}
 
           {/* --- LIST REVIEW --- */}
-          <div className='card border-0 shadow-sm'>
-            <div className='card-header bg-white d-flex justify-content-between align-items-center'>
-              <span className='fw-bold'>Ulasan Pembeli</span>
-              <span className='badge bg-secondary'>
-                {product.reviews?.length || 0} Ulasan
-              </span>
-            </div>
-            <div className='card-body'>
-              {product.reviews && product.reviews.length > 0 ? (
-                <div className='list-group list-group-flush'>
-                  {product.reviews.map((rev) => (
-                    <div key={rev.id} className='list-group-item px-0 py-3'>
-                      <div className='d-flex w-100 justify-content-between mb-1'>
-                        <div className='d-flex align-items-center'>
-                          <img
-                            src={
-                              rev.avatar ||
-                              "https://ui-avatars.com/api/?name=" +
-                                rev.user_name
-                            }
-                            alt='av'
-                            className='rounded-circle me-2'
-                            width='30'
-                            height='30'
-                          />
-                          <h6 className='mb-0 me-2'>{rev.user_name}</h6>
-                        </div>
-                        <small className='text-muted'>
-                          {formatDate(rev.created_at)}
-                        </small>
-                      </div>
-                      <div className='mb-2'>
-                        {[...Array(5)].map((_, i) => (
-                          <i
-                            key={i}
-                            className={`bi bi-star${
-                              i < rev.rating ? "-fill" : ""
-                            } text-warning small me-1`}
-                          ></i>
-                        ))}
-                      </div>
-                      <p className='mb-1 text-secondary small'>{rev.comment}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className='text-center py-4 text-muted'>
-                  <i className='bi bi-chat-square-dots display-6 d-block mb-2 opacity-50'></i>
-                  Belum ada ulasan untuk produk ini.
-                </div>
-              )}
-            </div>
-          </div>
+          <Reviews product={product} />
         </div>
       </div>
     </div>

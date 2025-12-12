@@ -57,7 +57,7 @@ const Products = () => {
   // 1. View Detail
   if (viewDetailId) {
     return (
-      <AdminLayout title="Detail Produk">
+      <AdminLayout>
         <Detail productId={viewDetailId} onBack={() => setViewDetailId(null)} />
       </AdminLayout>
     );
@@ -78,38 +78,38 @@ const Products = () => {
   // 3. Main View (Tabs: Categories & Product List)
   return (
     <AdminLayout title={`Managemen Produk`}>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3 className="mb-0 fw-bold">Manajemen Produk</h3>
+      <div className='d-flex justify-content-between align-items-center mb-3'>
+        <h3 className='mb-0 fw-bold'>Manajemen Produk</h3>
       </div>
 
       {/* Navigation Tabs */}
-      <ul className="nav nav-tabs">
-        <li className="nav-item">
+      <ul className='nav nav-tabs'>
+        <li className='nav-item'>
           <button
             className={`nav-link ${
               activeTab === "categories" ? "active fw-bold" : ""
             }`}
             onClick={() => setActiveTab("categories")}
           >
-            <i className="bi bi-tags me-2"></i>
+            <i className='bi bi-tags me-2'></i>
             Kategori
           </button>
         </li>
-        <li className="nav-item">
+        <li className='nav-item'>
           <button
             className={`nav-link ${
               activeTab === "products" ? "active fw-bold" : ""
             }`}
             onClick={() => setActiveTab("products")}
           >
-            <i className="bi bi-box-seam me-2"></i>
+            <i className='bi bi-box-seam me-2'></i>
             Data Produk
           </button>
         </li>
       </ul>
 
       {/* Tab Content */}
-      <div className="tab-content">
+      <div className='tab-content'>
         {activeTab === "products" ? (
           <List
             isLoading={isLoading}
@@ -125,8 +125,8 @@ const Products = () => {
             onCreate={handleCreate}
           />
         ) : (
-          <div className="card border-top-0 rounded-0 rounded-bottom shadow-sm">
-            <div className="card-body">
+          <div className='card border-top-0 rounded-0 rounded-bottom shadow-sm'>
+            <div className='card-body'>
               <Categories />
             </div>
           </div>

@@ -41,6 +41,7 @@ const SingleProduct = () => {
 
   return (
     <div className='container py-3'>
+      <title>{`Detail Produk ${product.name}`}</title>
       <div className='row g-4'>
         {/* 1. Component Gallery */}
         <div className='col-12 col-md-4'>

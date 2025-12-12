@@ -1,4 +1,4 @@
--- Active: 1711729586887@@127.0.0.1@5432@ecom
+-- Active: 1763557345068@@103.150.226.156@5432@ecom
 CREATE TABLE configurations (
     id SERIAL PRIMARY KEY,
     key VARCHAR(100) UNIQUE NOT NULL, -- Nama variabel (misal: midtrans_server_key)
@@ -168,8 +168,12 @@ CREATE TABLE reviews (
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
+    replay TEXT,
+    replay_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'Asia/Jakarta'),
     created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'Asia/Jakarta')
 );
+
+
 
 -- 9. TABEL CARTS
 CREATE TABLE carts (

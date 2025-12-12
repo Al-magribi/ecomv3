@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { ApiProduct } from "../product/ApiProduct";
 
 export const ApiReview = createApi({
   reducerPath: "ApiReview",
@@ -26,9 +27,17 @@ export const ApiReview = createApi({
         method: "POST",
         body: { reply },
       }),
-      invalidatesTags: ["Review"],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        await queryFulfilled;
+
+        dispatch(ApiProduct.util.invalidateTags(["Product"]));
+      },
     }),
   }),
 });
 
-export const { useGetReviewsQuery, useSaveReviewMutation } = ApiReview;
+export const {
+  useGetReviewsQuery,
+  useSaveReviewMutation,
+  useReplyReviewMutation,
+} = ApiReview;

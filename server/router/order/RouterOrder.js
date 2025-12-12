@@ -199,7 +199,7 @@ router.get(
 
     const whereStr = `WHERE ${whereClauses.join(" AND ")}`;
 
-    // 3. Query Utama (Updated with Address Joins)
+    // 3. Query Utama
     const dataQuery = `
       SELECT 
         o.id, 
@@ -227,6 +227,7 @@ router.get(
         (
             SELECT json_agg(
                 json_build_object(
+                    'product_id', p.id,
                     'product_name', p.name,
                     'quantity', oi.quantity,
                     'price', oi.price,
@@ -234,16 +235,32 @@ router.get(
                         WHEN pv.id IS NOT NULL THEN concat(pv.color, ' - ', pv.size)
                         ELSE null 
                     END,
-                    'image', (SELECT link FROM images WHERE product_id = p.id LIMIT 1)
+                    'image', (SELECT link FROM images WHERE product_id = p.id LIMIT 1),
+                    
+                    -- PERBAIKAN DI SINI: Review dimasukkan ke dalam object item
+                    'review', CASE 
+                        WHEN r.id IS NOT NULL THEN json_build_object(
+                            'id', r.id,
+                            'rating', r.rating,
+                            'comment', r.comment,
+                            'created_at', r.created_at
+                        )
+                        ELSE null
+                    END
                 )
             )
             FROM order_items oi
             LEFT JOIN products p ON oi.product_id = p.id
             LEFT JOIN product_variants pv ON oi.product_variant_id = pv.id
+            
+            -- Join ke tabel reviews berdasarkan product_id DAN user_id
+            -- Kita hanya ingin review milik user ini untuk produk ini
+            LEFT JOIN reviews r ON r.product_id = p.id AND r.user_id = o.user_id
+            
             WHERE oi.order_id = o.id
         ) as items
+
       FROM orders o
-      -- Lakukan Join ke tabel wilayah berdasarkan ID yang tersimpan di snapshot order
       LEFT JOIN provinces prov ON o.shipping_province_id = prov.id
       LEFT JOIN regencies reg ON o.shipping_regency_id = reg.id
       LEFT JOIN districts dist ON o.shipping_district_id = dist.id

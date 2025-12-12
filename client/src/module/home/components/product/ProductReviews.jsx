@@ -1,3 +1,5 @@
+import React from "react";
+
 const ProductReviews = ({ reviews, rating }) => {
   // Helper Logic
   const calculateRatingWidth = (star) => {
@@ -10,6 +12,16 @@ const ProductReviews = ({ reviews, rating }) => {
   const countRating = (star) => {
     if (!reviews) return 0;
     return reviews.filter((r) => Math.floor(r.rating) === star).length;
+  };
+
+  // Helper Format Tanggal
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   return (
@@ -83,6 +95,7 @@ const ProductReviews = ({ reviews, rating }) => {
         {reviews && reviews.length > 0 ? (
           reviews.map((review) => (
             <div key={review.id} className='border-bottom pb-3 mb-3'>
+              {/* Header Reviewer */}
               <div className='d-flex align-items-center gap-2 mb-2'>
                 <div
                   className='rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold'
@@ -92,10 +105,17 @@ const ProductReviews = ({ reviews, rating }) => {
                     ? review.user_name.charAt(0).toUpperCase()
                     : "U"}
                 </div>
-                <span className='fw-bold small'>
-                  {review.user_name || "Pengguna"}
-                </span>
+                <div>
+                  <div className='fw-bold small'>
+                    {review.user_name || "Pengguna"}
+                  </div>
+                  <small className='text-muted' style={{ fontSize: "10px" }}>
+                    {formatDate(review.created_at)}
+                  </small>
+                </div>
               </div>
+
+              {/* Bintang */}
               <div className='mb-2'>
                 {[...Array(5)].map((_, i) => (
                   <i
@@ -106,10 +126,27 @@ const ProductReviews = ({ reviews, rating }) => {
                   ></i>
                 ))}
               </div>
-              <p className='mb-2'>{review.comment}</p>
-              <small className='text-muted'>
-                {new Date(review.created_at).toLocaleDateString()}
-              </small>
+
+              {/* Komentar User */}
+              <p className='mb-2 text-dark'>{review.comment}</p>
+
+              {/* --- PERBAIKAN: MENAMPILKAN BALASAN ADMIN --- */}
+              {review.reply && (
+                <div className='bg-light p-3 rounded mt-2 ms-4 border-start border-success border-3'>
+                  <div className='d-flex justify-content-between align-items-center mb-1'>
+                    <span className='fw-bold text-success small'>
+                      <i className='bi bi-shop me-1'></i> Respon Penjual
+                    </span>
+                    <small
+                      className='text-muted'
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      {formatDate(review.reply_at)}
+                    </small>
+                  </div>
+                  <p className='mb-0 small text-secondary'>{review.reply}</p>
+                </div>
+              )}
             </div>
           ))
         ) : (

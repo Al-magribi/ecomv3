@@ -5,17 +5,22 @@ import Header from "../../../components/header/Header";
 import Footer from "../../../components/footer/Footer";
 import Detail from "./Detail";
 import MobileNav from "../../../components/layout/MobileNav";
+// Import Component Review yang baru
 import Review from "./Review";
 
 const Order = () => {
   // --- STATE ---
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const limit = 5; // Menampilkan 5 pesanan per halaman
+  const limit = 5;
   const [debounced, setDebounced] = useState("");
 
-  const [selectedOrder, setSelectedOrder] = useState(null); // Menyimpan order yg diklik
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // STATE BARU: Untuk Mengontrol Modal Review
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewProduct, setReviewProduct] = useState(null);
 
   // --- RTK QUERY ---
   const {
@@ -23,11 +28,7 @@ const Order = () => {
     isLoading,
     isError,
   } = useGetMyOrdersQuery(
-    {
-      page,
-      limit,
-      search: debounced,
-    },
+    { page, limit, search: debounced },
     { pollingInterval: 30000 }
   );
 
@@ -54,14 +55,14 @@ const Order = () => {
     switch (status) {
       case "pending":
         return "bg-warning text-dark";
-      case "paid": // TAMBAHAN STATUS PAID
+      case "paid":
         return "bg-success";
       case "processing":
         return "bg-info text-dark";
       case "shipped":
         return "bg-primary";
       case "completed":
-        return "bg-success";
+        return "bg-success"; // Backend mewajibkan status ini untuk review
       case "cancelled":
         return "bg-danger";
       default:
@@ -71,9 +72,10 @@ const Order = () => {
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
-    setPage(1); // Reset ke halaman 1 saat mencari
+    setPage(1);
   };
 
+  // HANDLER: Detail Order
   const handleShowDetail = (order) => {
     setSelectedOrder(order);
     setShowDetailModal(true);
@@ -84,11 +86,21 @@ const Order = () => {
     setSelectedOrder(null);
   };
 
+  // HANDLER: Review Product
+  const handleShowReview = (item) => {
+    setReviewProduct(item);
+    setShowReviewModal(true);
+  };
+
+  const handleCloseReview = () => {
+    setShowReviewModal(false);
+    setReviewProduct(null);
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounced(search);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -173,40 +185,55 @@ const Order = () => {
                   {order.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className='d-flex align-items-center mb-3 last:mb-0'
+                      className='d-flex flex-column flex-sm-row align-items-sm-center mb-3 last:mb-0 border-bottom pb-3 pb-sm-0 border-sm-0'
                     >
-                      {/* Thumbnail */}
-                      <img
-                        src={item.image || "https://via.placeholder.com/80"}
-                        alt={item.product_name}
-                        className='rounded border'
-                        style={{
-                          width: "70px",
-                          height: "70px",
-                          objectFit: "cover",
-                        }}
-                      />
-
-                      {/* Item Details */}
-                      <div className='ms-3 flex-grow-1'>
-                        <h6
-                          className='mb-1 fw-semibold text-truncate'
-                          style={{ maxWidth: "250px" }}
-                        >
-                          {item.product_name}
-                        </h6>
-                        <p className='mb-0 small text-muted'>
-                          {item.variant
-                            ? `Varian: ${item.variant}`
-                            : "Produk Satuan"}
-                          <span className='mx-2'>•</span>
-                          {item.quantity} x {formatRupiah(item.price)}
-                        </p>
+                      {/* Item Image & Info */}
+                      <div className='d-flex align-items-center flex-grow-1'>
+                        <img
+                          src={item.image || "https://via.placeholder.com/80"}
+                          alt={item.product_name}
+                          className='rounded border flex-shrink-0'
+                          style={{
+                            width: "70px",
+                            height: "70px",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <div className='ms-3'>
+                          <h6
+                            className='mb-1 fw-semibold text-truncate'
+                            style={{ maxWidth: "250px" }}
+                          >
+                            {item.product_name}
+                          </h6>
+                          <p className='mb-0 small text-muted'>
+                            {item.variant
+                              ? `Varian: ${item.variant}`
+                              : "Produk Satuan"}
+                            <span className='mx-2 d-none d-sm-inline'>•</span>
+                            <br className='d-sm-none' />
+                            {item.quantity} x {formatRupiah(item.price)}
+                          </p>
+                        </div>
                       </div>
 
-                      {/* Subtotal Item (Optional, hidden on small screens) */}
-                      <div className='text-end d-none d-sm-block'>
-                        <span className='fw-bold text-dark'>
+                      {/* Action Button & Subtotal */}
+                      <div className='mt-2 mt-sm-0 text-end d-flex align-items-center justify-content-between justify-content-sm-end'>
+                        {/* TOMBOL REVIEW: Hanya muncul jika order COMPLETED */}
+                        {order.status === "completed" && (
+                          <button
+                            className='btn btn-sm btn-outline-warning me-3 d-flex align-items-center gap-1 shadow-sm'
+                            onClick={() => handleShowReview(item)}
+                            title='Beri Ulasan'
+                          >
+                            <i className='bi bi-star-fill'></i>
+                            <span className='small fw-semibold d-none d-md-inline'>
+                              Ulas
+                            </span>
+                          </button>
+                        )}
+
+                        <span className='fw-bold text-dark d-block'>
                           {formatRupiah(item.price * item.quantity)}
                         </span>
                       </div>
@@ -226,11 +253,10 @@ const Order = () => {
                   <div className='d-flex gap-2'>
                     <button
                       className='btn btn-outline-secondary btn-sm'
-                      onClick={() => handleShowDetail(order)} // <--- Panggil handler
+                      onClick={() => handleShowDetail(order)}
                     >
                       Detail
                     </button>
-                    {/* Tampilkan tombol Bayar hanya jika status pending */}
                     {order.status === "pending" && (
                       <button className='btn btn-primary btn-sm'>
                         Bayar Sekarang
@@ -243,12 +269,12 @@ const Order = () => {
           ))}
         </div>
 
-        {/* PAGINATION */}
+        {/* PAGINATION (Kode pagination tetap sama) */}
         {!isLoading && orderData?.pagination?.totalPage > 1 && (
           <div className='d-flex justify-content-center mt-5'>
+            {/* ... kode pagination Anda ... */}
             <nav>
               <ul className='pagination'>
-                {/* Prev Button */}
                 <li className={`page-item ${page === 1 ? "disabled" : ""}`}>
                   <button
                     className='page-link'
@@ -257,8 +283,6 @@ const Order = () => {
                     Previous
                   </button>
                 </li>
-
-                {/* Page Numbers */}
                 {[...Array(orderData.pagination.totalPage)].map((_, i) => (
                   <li
                     key={i + 1}
@@ -272,8 +296,6 @@ const Order = () => {
                     </button>
                   </li>
                 ))}
-
-                {/* Next Button */}
                 <li
                   className={`page-item ${
                     !orderData.pagination.hasNext ? "disabled" : ""
@@ -298,8 +320,15 @@ const Order = () => {
         order={selectedOrder}
       />
 
-      <Footer />
+      {/* --- RENDER MODAL REVIEW --- */}
+      {/* Modal ini akan muncul ketika showReviewModal bernilai true */}
+      <Review
+        show={showReviewModal}
+        handleClose={handleCloseReview}
+        product={reviewProduct}
+      />
 
+      <Footer />
       <MobileNav />
     </div>
   );

@@ -109,8 +109,16 @@ router.get(
     if (!id) return res.status(400).json({ message: "ID is required" });
 
     // 1. Ambil Data Produk Utama
+    // UPDATE: Menambahkan subquery untuk memastikan sold_count akurat dari riwayat order
     const productResult = await pool.query(
-      `SELECT p.*, c.name as category_name 
+      `SELECT 
+         p.*, 
+         c.name as category_name,
+         (
+           SELECT COALESCE(SUM(quantity), 0) 
+           FROM order_items 
+           WHERE product_id = p.id
+         )::int as calculated_sold_count
        FROM products p
        LEFT JOIN categories c ON p.category_id = c.id
        WHERE p.id = $1`,
@@ -121,22 +129,31 @@ router.get(
       return res.status(404).json({ message: msg.notFound });
     }
 
+    const product = productResult.rows[0];
+
+    // Gunakan calculated_sold_count jika sold_count statis 0 (opsional, untuk konsistensi)
+    if (product.sold_count === 0 && product.calculated_sold_count > 0) {
+      product.sold_count = product.calculated_sold_count;
+    }
+
     // 2. Ambil Images
     const imagesResult = await pool.query(
       `SELECT id, link FROM images WHERE product_id = $1`,
       [id]
     );
 
-    // 3. TAMBAHAN: Ambil Variants (Size/Color) karena tabel baru mendukung varian
+    // 3. Ambil Variants
     const variantsResult = await pool.query(
       `SELECT id, name, color, size, stock, price_adjustment 
          FROM product_variants WHERE product_id = $1 ORDER BY id ASC`,
       [id]
     );
 
-    // 4. Ambil Reviews
+    // 4. Ambil Reviews (UPDATE: Ambil kolom reply dan reply_at)
     const reviewsResult = await pool.query(
-      `SELECT r.id, r.rating, r.comment, r.created_at, u.name as user_name, u.avatar
+      `SELECT r.id, r.rating, r.comment, r.created_at, 
+              r.reply, r.reply_at,  
+              u.name as user_name, u.avatar
        FROM reviews r
        LEFT JOIN users u ON r.user_id = u.id
        WHERE r.product_id = $1
@@ -144,9 +161,8 @@ router.get(
       [id]
     );
 
-    const product = productResult.rows[0];
     product.images = imagesResult.rows;
-    product.variants = variantsResult.rows; // Attach variants ke response
+    product.variants = variantsResult.rows;
     product.reviews = reviewsResult.rows;
 
     res.json(product);
