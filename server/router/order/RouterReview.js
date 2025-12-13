@@ -70,25 +70,50 @@ router.post(
       });
     }
 
-    // 3. Simpan Review (UPSERT: Insert or Update)
-    // Jika (user_id, product_id) sudah ada, maka LAKUKAN UPDATE.
-    // Jika belum ada, LAKUKAN INSERT.
-    const upsertReview = await client.query(
-      `INSERT INTO reviews (user_id, product_id, rating, comment, created_at) 
-       VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (user_id, product_id) 
-       DO UPDATE SET 
-          rating = EXCLUDED.rating, 
-          comment = EXCLUDED.comment,
-          updated_at = NOW()
-       RETURNING id, rating, comment, created_at`,
-      [user_id, product_id, rating, comment]
+    // 3. Manual UPSERT (Cek -> Insert/Update)
+    // Cek apakah user ini sudah pernah review produk ini sebelumnya
+    const existingReview = await client.query(
+      `SELECT id FROM reviews WHERE user_id = $1 AND product_id = $2`,
+      [user_id, product_id]
     );
+
+    let resultReview;
+
+    if (existingReview.rowCount > 0) {
+      // A. Jika sudah ada: UPDATE
+      const updateQuery = `
+        UPDATE reviews 
+        SET rating = $3, comment = $4, created_at = NOW()
+        WHERE user_id = $1 AND product_id = $2
+        RETURNING id, rating, comment, created_at
+      `;
+      const updateRes = await client.query(updateQuery, [
+        user_id,
+        product_id,
+        rating,
+        comment,
+      ]);
+      resultReview = updateRes.rows[0];
+    } else {
+      // B. Jika belum ada: INSERT
+      const insertQuery = `
+        INSERT INTO reviews (user_id, product_id, rating, comment, created_at) 
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING id, rating, comment, created_at
+      `;
+      const insertRes = await client.query(insertQuery, [
+        user_id,
+        product_id,
+        rating,
+        comment,
+      ]);
+      resultReview = insertRes.rows[0];
+    }
 
     res.status(200).json({
       status: "success",
-      message: "Ulasan berhasil disimpan", // Pesan netral untuk insert/update
-      data: upsertReview.rows[0],
+      message: "Ulasan berhasil disimpan",
+      data: resultReview,
     });
   })
 );

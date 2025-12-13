@@ -37,6 +37,16 @@ export const ApiProduct = createApi({
       }),
       invalidatesTags: ["Product"],
     }),
+
+    getProductReviews: builder.query({
+      query: ({ id, page, limit, rating }) => {
+        let url = `/get-product-reviews?product_id=${id}&page=${page}&limit=${limit}`;
+        if (rating) url += `&rating=${rating}`;
+        return url;
+      },
+      // Penting: Jangan gunakan cache standard jika ingin fitur "Load More" manual
+      // atau biarkan default dan kita handle merge di component.
+    }),
   }),
 });
 
@@ -45,4 +55,5 @@ export const {
   useGetProductQuery,
   useSaveProductMutation,
   useDeleteProductMutation,
+  useGetProductReviewsQuery,
 } = ApiProduct;

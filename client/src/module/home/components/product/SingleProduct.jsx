@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useGetProductQuery } from "../../../../service/product/ApiProduct";
+import {
+  useGetProductQuery,
+  useGetProductReviewsQuery,
+} from "../../../../service/product/ApiProduct";
 
 // Import Components
 import ProductGallery from "./ProductGallery";
@@ -16,14 +19,60 @@ const SingleProduct = () => {
   const [qty, setQty] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null); // State Varian Terpilih
 
+  // State Review
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewFilter, setReviewFilter] = useState(null); // null = All, 1-5 = Bintang
+  const [allReviews, setAllReviews] = useState([]); // Array penampung ulasan yang di-load
+  const [hasMoreReviews, setHasMoreReviews] = useState(false);
+
   // RTK Query
   const { data: product, isLoading, isError } = useGetProductQuery(id);
+
+  const { data: reviewsData, isFetching: isFetchingReviews } =
+    useGetProductReviewsQuery(
+      {
+        id,
+        page: reviewPage,
+        limit: 5, // Default load 5 ulasan
+        rating: reviewFilter,
+      },
+      {
+        skip: !id, // Jangan fetch jika ID tidak ada
+        refetchOnMountOrArgChange: true, // Pastikan fetch ulang saat filter berubah
+      }
+    );
 
   // Reset variant jika id berubah atau data baru dimuat
   useEffect(() => {
     setSelectedVariant(null);
     setQty(1);
   }, [id, product]);
+
+  // Logic: Menggabungkan Ulasan (Append vs Replace)
+  useEffect(() => {
+    if (reviewsData) {
+      if (reviewPage === 1) {
+        // Jika halaman 1 (filter baru atau refresh), GANTI data
+        setAllReviews(reviewsData.data);
+      } else {
+        // Jika halaman > 1 (load more), GABUNG data
+        setAllReviews((prev) => [...prev, ...reviewsData.data]);
+      }
+      setHasMoreReviews(reviewsData.pagination.hasNext); // Set tombol load more aktif/tidak
+    }
+  }, [reviewsData, reviewPage]);
+
+  // Handler Ganti Filter
+  const handleFilterChange = (star) => {
+    setReviewFilter(star); // Set filter (null atau angka)
+    setReviewPage(1); // Reset ke halaman 1
+    setAllReviews([]); // Kosongkan tampilan sementara
+  };
+
+  // Handler Load More
+  const handleLoadMore = () => {
+    setReviewPage((prev) => prev + 1);
+  };
 
   if (isLoading)
     return (
@@ -69,7 +118,19 @@ const SingleProduct = () => {
       </div>
 
       {/* 4. Reviews */}
-      <ProductReviews reviews={product.reviews} rating={product.rating} />
+      <ProductReviews
+        reviews={allReviews}
+        rating={product.rating}
+        // Props Baru dari Backend
+        ratingSummary={product.rating_summary}
+        totalReviews={product.total_reviews}
+        // Props Kontrol
+        onFilterChange={handleFilterChange}
+        activeFilter={reviewFilter}
+        onLoadMore={handleLoadMore}
+        hasMore={hasMoreReviews}
+        isLoadingReviews={isFetchingReviews}
+      />
     </div>
   );
 };
