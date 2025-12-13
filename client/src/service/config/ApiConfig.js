@@ -62,6 +62,35 @@ export const ApiConfig = createApi({
       }),
       invalidatesTags: ["Tables"],
     }),
+
+    // --- FITUR BARU BACKUP ---
+
+    // 1. Get List History Backup
+    getBackups: builder.query({
+      query: () => "/list-backups",
+      providesTags: ["Backups"],
+    }),
+
+    // 2. Create Backup
+    // Kita gunakan builder.mutation meskipun methodnya GET,
+    // karena aksi ini mengubah state di server (membuat file baru)
+    // dan kita ingin memicu invalidatesTags.
+    createBackup: builder.mutation({
+      query: () => ({
+        url: "/backup",
+        method: "GET",
+      }),
+      invalidatesTags: ["Backups"], // Auto refresh list setelah backup selesai
+    }),
+
+    // 3. Delete Backup
+    deleteBackup: builder.mutation({
+      query: (filename) => ({
+        url: `/delete-backup/${filename}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Backups"],
+    }),
   }),
 });
 
@@ -74,4 +103,7 @@ export const {
   useRestoreDatabaseMutation,
   useGetTablesQuery,
   useResetTablesMutation,
+  useCreateBackupMutation,
+  useGetBackupsQuery,
+  useDeleteBackupMutation,
 } = ApiConfig;

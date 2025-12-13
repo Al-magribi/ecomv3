@@ -20,6 +20,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/temp_backup": {
+        target: "http://localhost:2090",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   build: {

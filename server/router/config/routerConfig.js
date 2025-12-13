@@ -211,6 +211,73 @@ const getCommandPath = (toolName) => {
   }
 };
 
+// ----------------------------------------------------------------------------
+// A. LIST HISTORY BACKUP (BARU)
+// ----------------------------------------------------------------------------
+router.get("/list-backups", authorize("admin"), async (req, res) => {
+  try {
+    const tempDir = path.join(process.cwd(), "temp_backup");
+    if (!fs.existsSync(tempDir)) {
+      return res.json([]);
+    }
+
+    const files = fs.readdirSync(tempDir);
+
+    // Filter hanya file .zip dan ambil detailnya
+    const fileList = files
+      .filter((file) => file.endsWith(".zip"))
+      .map((file) => {
+        const filePath = path.join(tempDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          size: (stats.size / 1024 / 1024).toFixed(2) + " MB", // Convert ke MB
+          created_at: stats.birthtime,
+          url: `/temp_backup/${file}`, // URL Static dari app.js
+        };
+      })
+      // Urutkan dari yang terbaru
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json(fileList);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Gagal memuat history backup: " + error.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// B. DELETE BACKUP (BARU)
+// ----------------------------------------------------------------------------
+router.delete(
+  "/delete-backup/:filename",
+  authorize("admin"),
+  async (req, res) => {
+    try {
+      const { filename } = req.params;
+      // Validasi sederhana agar tidak directory traversal
+      if (filename.includes("..") || !filename.endsWith(".zip")) {
+        return res.status(400).json({ message: "Filename tidak valid" });
+      }
+
+      const filePath = path.join(process.cwd(), "temp_backup", filename);
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.json({ message: "File backup berhasil dihapus" });
+      } else {
+        res.status(404).json({ message: "File tidak ditemukan" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// ----------------------------------------------------------------------------
+// C. CREATE BACKUP (MODIFIKASI)
+// ----------------------------------------------------------------------------
 router.get("/backup", authorize("admin"), async (req, res) => {
   const tempDir = path.join(process.cwd(), "temp_backup");
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -218,17 +285,18 @@ router.get("/backup", authorize("admin"), async (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const sqlFileName = `db_dump_${timestamp}.sql`;
   const sqlFilePath = path.join(tempDir, sqlFileName);
-  const zipFileName = `backup_${timestamp}.zip`;
 
-  // DETEKSI COMMAND (pg_dump)
+  // Nama file ZIP hasil
+  const zipFileName = `backup_${timestamp}.zip`;
+  const zipFilePath = path.join(tempDir, zipFileName);
+
   const PG_DUMP_CMD = getCommandPath("pg_dump");
 
   try {
     console.log(`[BACKUP] Menggunakan command: ${PG_DUMP_CMD}`);
-
     const pgEnv = { ...process.env, PGPASSWORD: process.env.P_PASSWORD };
 
-    // --- PROSES DUMP ---
+    // 1. DUMP SQL
     await new Promise((resolve, reject) => {
       const dumpProcess = spawn(
         PG_DUMP_CMD,
@@ -239,9 +307,9 @@ router.get("/backup", authorize("admin"), async (req, res) => {
           process.env.P_PORT || "5432",
           "-U",
           process.env.P_USER,
-          "--clean", // Drop table dulu
+          "--clean",
           "--if-exists",
-          "--format=p", // Plain text SQL
+          "--format=p",
           "--file",
           sqlFilePath,
           process.env.P_DB,
@@ -252,40 +320,60 @@ router.get("/backup", authorize("admin"), async (req, res) => {
       dumpProcess.stderr.on("data", (data) =>
         console.log(`pg_dump log: ${data}`)
       );
-
-      dumpProcess.on("error", (err) => {
-        reject(new Error(`Gagal spawn ${PG_DUMP_CMD}. Error: ${err.message}`));
-      });
-
+      dumpProcess.on("error", (err) =>
+        reject(new Error(`Gagal spawn pg_dump: ${err.message}`))
+      );
       dumpProcess.on("close", (code) => {
         if (code === 0) resolve();
         else reject(new Error(`pg_dump exited with code ${code}`));
       });
     });
 
-    // --- PROSES ZIP ---
+    // 2. ZIP PROCESS (SIMPAN KE FILE, BUKAN STREAM KE RES)
+    const output = fs.createWriteStream(zipFilePath);
     const archive = archiver("zip", { zlib: { level: 9 } });
-    res.attachment(zipFileName);
-    archive.pipe(res);
 
+    // Handle error saat write stream / archiver
+    output.on("close", () => {
+      console.log(
+        "[BACKUP] Zip created successfully (" +
+          archive.pointer() +
+          " total bytes)"
+      );
+
+      // Hapus file SQL mentah setelah di-zip agar hemat space
+      if (fs.existsSync(sqlFilePath)) fs.unlinkSync(sqlFilePath);
+
+      // RESPON JSON KE CLIENT (Berisi URL download)
+      res.json({
+        message: "Backup berhasil dibuat",
+        filename: zipFileName,
+        url: `/temp_backup/${zipFileName}`,
+      });
+    });
+
+    archive.on("error", (err) => {
+      throw err;
+    });
+
+    // Pipe archive data to the output file
+    archive.pipe(output);
+
+    // Append SQL
     archive.file(sqlFilePath, { name: "database.sql" });
 
+    // Append Assets
     const assetsPath = path.join(process.cwd(), "server/assets");
     if (fs.existsSync(assetsPath)) {
       archive.directory(assetsPath, "assets");
     }
 
     await archive.finalize();
-
-    // Cleanup
-    res.on("finish", () => {
-      try {
-        if (fs.existsSync(sqlFilePath)) fs.unlinkSync(sqlFilePath);
-      } catch (e) {}
-    });
   } catch (error) {
     console.error("[BACKUP ERROR]", error);
+    // Cleanup partial files
     if (fs.existsSync(sqlFilePath)) fs.unlinkSync(sqlFilePath);
+    // Jangan hapus zip jika error terjadi di tengah jalan (opsional, tapi lebih baik cleanup)
     if (!res.headersSent) res.status(500).json({ message: error.message });
   }
 });

@@ -89,6 +89,11 @@ if (!isInstalled) {
 
       app.use("/assets", express.static(path.join(__dirname, "assets")));
 
+      const backupPath = path.join(process.cwd(), "temp_backup");
+      if (!fs.existsSync(backupPath))
+        fs.mkdirSync(backupPath, { recursive: true });
+      app.use("/temp_backup", express.static(backupPath));
+
       // Mount API Routes
       app.use("/api/config", RouterConfig);
       app.use("/api/auth", RouterAuth);

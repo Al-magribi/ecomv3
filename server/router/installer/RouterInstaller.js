@@ -108,6 +108,7 @@ router.post("/finish", async (req, res) => {
     app_domain,
     shipping_origin,
     rajaongkir_key,
+    midtrans_merchant_id,
     midtrans_server,
     midtrans_client,
     midtrans_base_url, // <--- TAMBAHKAN INI
@@ -205,6 +206,7 @@ router.post("/finish", async (req, res) => {
       { key: "shipping_api", val: rajaongkir_key },
 
       // --- Update Bagian Midtrans ---
+      { key: "midtrans_merchant_id", val: midtrans_merchant_id },
       { key: "midtrans_server_key", val: midtrans_server },
       { key: "midtrans_client_key", val: midtrans_client },
       { key: "midtrans_base_url", val: midtrans_base_url }, // <--- BARU
