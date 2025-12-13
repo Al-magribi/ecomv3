@@ -37,7 +37,7 @@ const store = configureStore({
       ApiCart.middleware,
       ApiReport.middleware,
     ]),
-  devTools: true,
+  devTools: import.meta.env.DEV,
 });
 
 export default store;
