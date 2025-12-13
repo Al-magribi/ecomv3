@@ -53,32 +53,61 @@ export const sendActivationEmail = async (email, name, activationCode, url) => {
   const mailOptions = {
     from: fromSender,
     to: email,
-    subject: "Aktivasi Akun",
+    subject: "Konfirmasi Pendaftaran akun",
     html: `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
-    .container { background-color: #fff; padding: 20px; border-radius: 8px; max-width: 600px; margin: auto; border: 1px solid #ddd; }
-    .btn { background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; font-weight: bold;}
-    .footer { margin-top: 20px; font-size: 12px; color: #888; text-align: center; }
+    body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #4a5568; }
+    .email-wrapper { width: 100%; background-color: #f4f7f6; padding: 40px 0; }
+    .email-card { background-color: #ffffff; max-width: 500px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #e1e4e8; }
+    .email-header { background-color: #2b6cb0; padding: 30px; text-align: center; } /* Warna Biru Professional */
+    .email-header h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px; }
+    .email-body { padding: 35px 30px; line-height: 1.6; }
+    .greeting { font-size: 20px; font-weight: 600; color: #2d3748; margin-bottom: 20px; }
+    .btn-container { text-align: center; margin: 35px 0; }
+    .btn { background-color: #3182ce; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; display: inline-block; transition: background-color 0.3s; box-shadow: 0 4px 6px rgba(49, 130, 206, 0.3); }
+    .btn:hover { background-color: #2b6cb0; }
+    .info-box { background-color: #ebf8ff; border-left: 4px solid #4299e1; padding: 15px; font-size: 14px; color: #2c5282; margin-bottom: 25px; border-radius: 4px; }
+    .link-fallback { margin-top: 25px; font-size: 12px; color: #718096; word-break: break-all; border-top: 1px solid #edf2f7; padding-top: 20px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #a0aec0; background-color: #f4f7f6; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2 style="color: #333;">Selamat Datang, ${name}!</h2>
-    <p>Terima kasih telah mendaftar di <b>${senderName}</b>. Langkah terakhir untuk mengaktifkan akun Anda adalah dengan mengklik tombol di bawah ini:</p>
-    
-    <div style="text-align: center;">
-      <a href="${activationUrl}" class="btn">Aktivasi Akun Saya</a>
+  <div class="email-wrapper">
+    <div class="email-card">
+      <div class="email-header">
+        <h1>Selamat Datang!</h1>
+      </div>
+      
+      <div class="email-body">
+        <div class="greeting">Halo, ${name} 👋</div>
+        
+        <p>Terima kasih telah mendaftar di <b>${senderName}</b>. Kami sangat senang Anda bergabung dengan kami.</p>
+        
+        <div class="info-box">
+          Langkah terakhir untuk mengamankan dan mengaktifkan akun Anda adalah dengan memverifikasi alamat email ini.
+        </div>
+
+        <div class="btn-container">
+          <a href="${activationUrl}" class="btn">Aktivasi Akun Saya</a>
+        </div>
+
+        <p>Jika Anda tidak merasa mendaftar di layanan kami, Anda dapat mengabaikan email ini dengan aman.</p>
+
+        <div class="link-fallback">
+          <p>Tombol di atas tidak berfungsi? Salin dan tempel tautan berikut ke browser Anda:</p>
+          <a href="${activationUrl}" style="color: #3182ce; text-decoration: none;">${activationUrl}</a>
+        </div>
+      </div>
     </div>
 
-    <p style="margin-top: 30px;">Jika tombol di atas tidak berfungsi, salin dan tempel tautan berikut ke browser Anda:</p>
-    <p style="background: #eee; padding: 10px; word-break: break-all; font-family: monospace;">${activationUrl}</p>
-    
     <div class="footer">
-      <p>Link ini valid selama 24 jam.<br>&copy; ${new Date().getFullYear()} ${senderName}</p>
+      Link ini valid selama 24 jam.<br>
+      &copy; ${new Date().getFullYear()} ${senderName}. All rights reserved.
     </div>
   </div>
 </body>
