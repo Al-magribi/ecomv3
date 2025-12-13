@@ -27,135 +27,72 @@ const router = Router();
 // 1. GET PRODUCTS (READ ALL - Pagination & Infinite Scroll)
 // ============================================================================
 router.get(
-  "/get-product",
+  "/get-products",
   withQuery(async (req, res, pool) => {
-    const { id } = req.query;
-    if (!id) return res.status(400).json({ message: "ID is required" });
-
-    // 1. Ambil Data Produk (Tetap sama)
-    const productResult = await pool.query(
-      `SELECT 
-         p.*, 
-         c.name as category_name,
-         (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE product_id = p.id)::int as calculated_sold_count
-       FROM products p
-       LEFT JOIN categories c ON p.category_id = c.id
-       WHERE p.id = $1`,
-      [id]
-    );
-
-    if (productResult.rows.length === 0) {
-      return res.status(404).json({ message: msg.notFound });
-    }
-    const product = productResult.rows[0];
-    if (product.sold_count === 0 && product.calculated_sold_count > 0) {
-      product.sold_count = product.calculated_sold_count;
-    }
-
-    // 2. Ambil Images & Variants (Tetap sama)
-    const imagesResult = await pool.query(
-      `SELECT id, link FROM images WHERE product_id = $1`,
-      [id]
-    );
-    const variantsResult = await pool.query(
-      `SELECT id, name, color, size, stock, price_adjustment 
-       FROM product_variants WHERE product_id = $1 ORDER BY id ASC`,
-      [id]
-    );
-
-    // 3. (BARU) Ambil Ringkasan Rating (Untuk Progress Bar)
-    // Query ini menghitung jumlah ulasan per bintang tanpa mengambil isi komentarnya
-    const ratingSummaryResult = await pool.query(
-      `SELECT floor(rating) as star, COUNT(*) as count 
-       FROM reviews 
-       WHERE product_id = $1 
-       GROUP BY floor(rating)`,
-      [id]
-    );
-
-    // Format menjadi object { 5: 10, 4: 5, ... } agar mudah dipakai frontend
-    const ratingSummary = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    let totalReviews = 0;
-
-    ratingSummaryResult.rows.forEach((row) => {
-      const star = parseInt(row.star);
-      const count = parseInt(row.count);
-      if (ratingSummary[star] !== undefined) {
-        ratingSummary[star] = count;
-        totalReviews += count;
-      }
-    });
-
-    product.images = imagesResult.rows;
-    product.variants = variantsResult.rows;
-    product.rating_summary = ratingSummary; // Kirim ke frontend
-    product.total_reviews = totalReviews; // Kirim total ulasan
-
-    res.json(product);
-  })
-);
-
-router.get(
-  "/get-product-reviews",
-  withQuery(async (req, res, pool) => {
-    const { product_id, page = 1, limit = 10, rating } = req.query;
-
-    if (!product_id)
-      return res.status(400).json({ message: "Product ID required" });
+    const { page = 1, limit = 20, search, categoryId } = req.query;
 
     const pageInt = parseInt(page);
     const limitInt = parseInt(limit);
     const offset = (pageInt - 1) * limitInt;
 
-    // Logic Dinamis Query SQL
-    let queryParams = [product_id];
-    let whereClause = "WHERE r.product_id = $1";
-    let paramCounter = 2; // Mulai dari $2 karena $1 adalah product_id
+    let queryParams = [];
+    let whereClauses = [];
+    let paramCounter = 1;
 
-    // JIKA ADA FILTER RATING (Dan valid/tidak null)
-    if (rating) {
-      // Menggunakan FLOOR(r.rating) agar sesuai dengan summary
-      // $paramCounter akan menjadi $2
-      whereClause += ` AND FLOOR(r.rating) = $${paramCounter}`;
-      queryParams.push(rating);
+    // Filter Pencarian
+    if (search) {
+      whereClauses.push(`p.name ILIKE $${paramCounter}`);
+      queryParams.push(`%${search}%`);
       paramCounter++;
     }
 
-    // Query Mengambil Data Review
-    const reviewsQuery = `
-      SELECT r.id, r.rating, r.comment, r.created_at, 
-             r.reply, r.reply_at,  
-             u.name as user_name, u.avatar
-      FROM reviews r
-      LEFT JOIN users u ON r.user_id = u.id
-      ${whereClause}
-      ORDER BY r.created_at DESC
+    // Filter Kategori
+    if (categoryId) {
+      whereClauses.push(`p.category_id = $${paramCounter}`);
+      queryParams.push(categoryId);
+      paramCounter++;
+    }
+
+    const whereStr =
+      whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    // PERBAIKAN: Ubah 'createdat' menjadi 'created_at' sesuai tabel baru
+    // Query mengambil produk + gambar thumbnail
+    const dataQuery = `
+      SELECT 
+        p.*,
+        c.name as category_name,
+        (SELECT link FROM images WHERE product_id = p.id LIMIT 1) as image
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      ${whereStr}
+      ORDER BY p.created_at DESC 
       LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `;
-    // Note: paramCounter dipakai untuk LIMIT, paramCounter+1 untuk OFFSET
 
-    // Query Hitung Total (Untuk logic 'Load More')
     const countQuery = `
       SELECT COUNT(*) as total 
-      FROM reviews r 
-      ${whereClause}
+      FROM products p 
+      ${whereStr}
     `;
 
-    // Eksekusi Params untuk Query Data
-    const queryParamsData = [...queryParams, limitInt, offset];
-
-    const [reviewsResult, countResult] = await Promise.all([
-      pool.query(reviewsQuery, queryParamsData),
+    const [dataResult, countResult] = await Promise.all([
+      pool.query(dataQuery, [...queryParams, limitInt, offset]),
       pool.query(countQuery, queryParams),
     ]);
 
+    const totalData = parseInt(countResult.rows[0].total);
+    const totalPage = Math.ceil(totalData / limitInt);
+
     res.json({
-      data: reviewsResult.rows,
+      message: "Data fetched",
+      data: dataResult.rows,
       pagination: {
         page: pageInt,
         limit: limitInt,
-        totalData: parseInt(countResult.rows[0].total),
-        hasNext: reviewsResult.rows.length === limitInt,
+        totalData,
+        totalPage,
+        hasNext: pageInt < totalPage,
       },
     });
   })
@@ -229,6 +166,72 @@ router.get(
     product.reviews = reviewsResult.rows;
 
     res.json(product);
+  })
+);
+
+router.get(
+  "/get-product-reviews",
+  withQuery(async (req, res, pool) => {
+    const { product_id, page = 1, limit = 10, rating } = req.query;
+
+    if (!product_id)
+      return res.status(400).json({ message: "Product ID required" });
+
+    const pageInt = parseInt(page);
+    const limitInt = parseInt(limit);
+    const offset = (pageInt - 1) * limitInt;
+
+    // Logic Dinamis Query SQL
+    let queryParams = [product_id];
+    let whereClause = "WHERE r.product_id = $1";
+    let paramCounter = 2; // Mulai dari $2 karena $1 adalah product_id
+
+    // JIKA ADA FILTER RATING (Dan valid/tidak null)
+    if (rating) {
+      // Menggunakan FLOOR(r.rating) agar sesuai dengan summary
+      // $paramCounter akan menjadi $2
+      whereClause += ` AND FLOOR(r.rating) = $${paramCounter}`;
+      queryParams.push(rating);
+      paramCounter++;
+    }
+
+    // Query Mengambil Data Review
+    const reviewsQuery = `
+      SELECT r.id, r.rating, r.comment, r.created_at, 
+             r.reply, r.reply_at,  
+             u.name as user_name, u.avatar
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
+      ${whereClause}
+      ORDER BY r.created_at DESC
+      LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
+    `;
+    // Note: paramCounter dipakai untuk LIMIT, paramCounter+1 untuk OFFSET
+
+    // Query Hitung Total (Untuk logic 'Load More')
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM reviews r 
+      ${whereClause}
+    `;
+
+    // Eksekusi Params untuk Query Data
+    const queryParamsData = [...queryParams, limitInt, offset];
+
+    const [reviewsResult, countResult] = await Promise.all([
+      pool.query(reviewsQuery, queryParamsData),
+      pool.query(countQuery, queryParams),
+    ]);
+
+    res.json({
+      data: reviewsResult.rows,
+      pagination: {
+        page: pageInt,
+        limit: limitInt,
+        totalData: parseInt(countResult.rows[0].total),
+        hasNext: reviewsResult.rows.length === limitInt,
+      },
+    });
   })
 );
 
