@@ -5,6 +5,8 @@ import Home from "./module/home/Home";
 import Signup from "./module/auth/Signup";
 import Activation from "./module/auth/Activation";
 import Signin from "./module/auth/Signin";
+import ForgotPassword from "./module/auth/ForgotPassword";
+import ResetPassword from "./module/auth/ResetPassword";
 import { ToastContainer } from "react-toastify";
 import { isAuthenticated } from "./utils/authentication";
 import { useLoadUserQuery } from "./service/auth/ApiAuth";
@@ -87,6 +89,15 @@ const App = () => {
               element={<Signup logo={store?.logo} isLoad={isLoading} />}
             />
             <Route path='/activation/:code' element={<Activation />} />
+
+            <Route
+              path='/forgot-password'
+              element={<ForgotPassword logo={store?.logo} />}
+            />
+            <Route
+              path='/reset-password'
+              element={<ResetPassword logo={store?.logo} />}
+            />
           </Route>
 
           {/* --- ADMIN ROUTES (Hanya Role: admin) --- */}

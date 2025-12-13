@@ -28,14 +28,14 @@ const Profile = () => {
   };
 
   // Handle Loading & Error
-  if (isLoading)
-    return (
-      <div className='d-flex justify-content-center mt-5'>
-        <div className='spinner-border text-primary' role='status'>
-          <span className='visually-hidden'>Loading...</span>
-        </div>
-      </div>
-    );
+  // if (isLoading)
+  //   return (
+  //     <div className='d-flex justify-content-center mt-5'>
+  //       <div className='spinner-border text-primary' role='status'>
+  //         <span className='visually-hidden'>Loading...</span>
+  //       </div>
+  //     </div>
+  //   );
 
   if (!user)
     return (

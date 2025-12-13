@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom"; // <--- 1. IMPORT INI
+import { useUpdateProfileMutation } from "../../../service/auth/ApiAuth";
+import { toast } from "react-toastify";
 
 const EditProfile = ({ show, onClose, user }) => {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    password: "", // Opsional jika user ingin ganti password
+    email: "",
+    password: "",
   });
 
-  // Isi form saat modal dibuka
+  const [updateProfile, { data, error, isSuccess, isLoading }] =
+    useUpdateProfileMutation();
+
   useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || "",
         phone: user.phone || "",
+        email: user.email || "",
         password: "",
       });
     }
@@ -20,20 +27,34 @@ const EditProfile = ({ show, onClose, user }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Logic API update user disini
-    alert("Simpan Profile: " + JSON.stringify(formData));
-    onClose();
+    updateProfile(formData);
   };
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(data.message);
+      setFormData({ name: "", phone: "", email: "", password: "" });
+      onClose();
+    }
+    if (error) {
+      toast.error(error.data.message);
+    }
+  }, [data, error, isSuccess]);
 
   if (!show) return null;
 
-  return (
+  // 2. GUNAKAN PORTAL & TAMBAHKAN Z-INDEX TINGGI
+  return ReactDOM.createPortal(
     <div
       className='modal fade show d-block'
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      tabIndex='-1'
+      role='dialog'
+      style={{
+        backgroundColor: "rgba(0,0,0,0.5)",
+      }}
     >
-      <div className='modal-dialog'>
-        <div className='modal-content'>
+      <div className='modal-dialog modal-dialog-centered'>
+        <div className='modal-content shadow-lg'>
           <div className='modal-header'>
             <h5 className='modal-title'>Edit Profil</h5>
             <button
@@ -67,6 +88,19 @@ const EditProfile = ({ show, onClose, user }) => {
                   }
                 />
               </div>
+
+              <div className='mb-3'>
+                <label className='form-label'>Email</label>
+                <input
+                  type='email'
+                  className='form-control'
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                />
+              </div>
+
               <div className='mb-3'>
                 <label className='form-label'>Ganti Password (Opsional)</label>
                 <input
@@ -88,14 +122,30 @@ const EditProfile = ({ show, onClose, user }) => {
               >
                 Batal
               </button>
-              <button type='submit' className='btn btn-primary'>
-                Simpan Perubahan
+              <button
+                type='submit'
+                className='btn btn-primary'
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className='spinner-border spinner-border-sm me-2'
+                      role='status'
+                      aria-hidden='true'
+                    ></span>
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Simpan Perubahan"
+                )}
               </button>
             </div>
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body // <--- 3. RENDER KE BODY
   );
 };
 

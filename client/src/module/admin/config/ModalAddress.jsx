@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom"; // <--- 1. IMPORT INI
 import {
   useGetProvincesQuery,
   useGetRegenciesQuery,
@@ -9,7 +10,7 @@ import {
 import { toast } from "react-toastify";
 
 const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
-  // --- 1. STATE FORM ---
+  // ... (Kode state dan hooks biarkan sama persis seperti sebelumnya) ...
   const [formData, setFormData] = useState({
     id: null,
     title: "",
@@ -24,38 +25,25 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
     is_primary: false,
   });
 
-  // --- 2. RTK QUERY HOOKS (CHAINED) ---
-
-  // A. Fetch Provinsi (Selalu jalan)
   const { data: provinces, isLoading: loadProv } = useGetProvincesQuery();
-
-  // B. Fetch Kota (Jalan jika province_id ada)
   const { data: regencies, isLoading: loadCity } = useGetRegenciesQuery(
     formData.province_id,
-    { skip: !formData.province_id } // Skip jika provinsi belum dipilih
+    { skip: !formData.province_id }
   );
-
-  // C. Fetch Kecamatan (Jalan jika regency_id ada)
   const { data: districts, isLoading: loadDist } = useGetDistrictsQuery(
     formData.regency_id,
     { skip: !formData.regency_id }
   );
-
-  // D. Fetch Desa (Jalan jika district_id ada)
   const { data: villages, isLoading: loadVill } = useGetVillagesQuery(
     formData.district_id,
     { skip: !formData.district_id }
   );
-
-  // E. Mutation Save
   const [saveAddress, { isLoading: isSaving, data, error, isSuccess }] =
     useSaveAddressMutation();
 
-  // --- 3. EFFECT: INISIALISASI DATA (EDIT / NEW) ---
   useEffect(() => {
     if (show) {
       if (initialData) {
-        // MODE EDIT: Isi form dengan data lama
         setFormData({
           id: initialData.id,
           title: initialData.title || "",
@@ -63,14 +51,13 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
           phone: initialData.phone || "",
           detail: initialData.detail || "",
           postal_code: initialData.postal_code || "",
-          province_id: initialData.province_id ? initialData.province_id : "",
-          regency_id: initialData.regency_id ? initialData.regency_id : "",
-          district_id: initialData.district_id ? initialData.district_id : "",
-          village_id: initialData.village_id ? initialData.village_id : "",
+          province_id: initialData.province_id || "",
+          regency_id: initialData.regency_id || "",
+          district_id: initialData.district_id || "",
+          village_id: initialData.village_id || "",
           is_primary: initialData.is_primary || false,
         });
       } else {
-        // MODE TAMBAH BARU: Reset form
         setFormData({
           id: null,
           title: "",
@@ -88,50 +75,30 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
     }
   }, [show, initialData, userDefaultName]);
 
-  // --- 4. HANDLERS ---
-
-  // Handle Text Change
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // Handle Checkbox
-  const handleCheck = (e) => {
+  const handleCheck = (e) =>
     setFormData({ ...formData, is_primary: e.target.checked });
-  };
-
-  // Handle Wilayah Change (Dengan Reset Logic)
-  const handleProvinceChange = (e) => {
+  const handleProvinceChange = (e) =>
     setFormData({
       ...formData,
       province_id: e.target.value,
-      regency_id: "", // Reset anak-anaknya
+      regency_id: "",
       district_id: "",
       village_id: "",
     });
-  };
-
-  const handleRegencyChange = (e) => {
+  const handleRegencyChange = (e) =>
     setFormData({
       ...formData,
       regency_id: e.target.value,
-      district_id: "", // Reset anak-anaknya
+      district_id: "",
       village_id: "",
     });
-  };
-
-  const handleDistrictChange = (e) => {
-    setFormData({
-      ...formData,
-      district_id: e.target.value,
-      village_id: "", // Reset anaknya
-    });
-  };
+  const handleDistrictChange = (e) =>
+    setFormData({ ...formData, district_id: e.target.value, village_id: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Panggil API Save (Create/Update otomatis dihandle backend based on ID)
     saveAddress(formData);
   };
 
@@ -140,7 +107,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
       toast.success(data.message);
       onClose();
     }
-
     if (error) {
       toast.error(error.data.message);
     }
@@ -148,13 +114,21 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
 
   if (!show) return null;
 
-  return (
+  // 2. GUNAKAN PORTAL & Z-INDEX
+  return ReactDOM.createPortal(
     <div
       className='modal fade show d-block'
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      tabIndex='-1'
+      role='dialog'
+      style={{
+        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 1060, // Pastikan di atas Sidebar (biasanya sidebar < 1050)
+      }}
     >
-      <div className='modal-dialog modal-lg'>
-        <div className='modal-content'>
+      <div className='modal-dialog modal-lg modal-dialog-centered'>
+        {" "}
+        {/* Tambah Centered */}
+        <div className='modal-content shadow-lg'>
           <div className='modal-header'>
             <h5 className='modal-title'>
               {initialData ? "Edit Alamat" : "Tambah Alamat Baru"}
@@ -169,8 +143,8 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
 
           <form onSubmit={handleSubmit}>
             <div className='modal-body'>
+              {/* ... (Isi Form Body biarkan sama) ... */}
               <div className='row g-3'>
-                {/* --- DATA PENERIMA --- */}
                 <div className='col-md-6'>
                   <label className='form-label fw-bold'>Label Alamat</label>
                   <input
@@ -183,7 +157,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     required
                   />
                 </div>
-
                 <div className='col-md-6'>
                   <label className='form-label fw-bold'>Nama Penerima</label>
                   <input
@@ -195,7 +168,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     required
                   />
                 </div>
-
                 <div className='col-md-6'>
                   <label className='form-label fw-bold'>Nomor Telepon</label>
                   <input
@@ -207,7 +179,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     required
                   />
                 </div>
-
                 <div className='col-md-6'>
                   <label className='form-label fw-bold'>Kode Pos</label>
                   <input
@@ -218,16 +189,12 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     onChange={handleChange}
                   />
                 </div>
-
-                {/* --- WILAYAH DROPDOWNS --- */}
                 <div className='col-12'>
                   <hr className='text-muted' />
                 </div>
                 <div className='col-12'>
                   <h6 className='fw-bold text-primary'>Data Wilayah</h6>
                 </div>
-
-                {/* 1. PROVINSI */}
                 <div className='col-md-6'>
                   <label className='form-label'>Provinsi</label>
                   <select
@@ -246,8 +213,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     ))}
                   </select>
                 </div>
-
-                {/* 2. KOTA / KABUPATEN */}
                 <div className='col-md-6'>
                   <label className='form-label'>Kota / Kabupaten</label>
                   <select
@@ -266,8 +231,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     ))}
                   </select>
                 </div>
-
-                {/* 3. KECAMATAN */}
                 <div className='col-md-6'>
                   <label className='form-label'>Kecamatan</label>
                   <select
@@ -286,15 +249,13 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     ))}
                   </select>
                 </div>
-
-                {/* 4. DESA / KELURAHAN */}
                 <div className='col-md-6'>
                   <label className='form-label'>Desa / Kelurahan</label>
                   <select
                     className='form-select'
                     name='village_id'
                     value={formData.village_id}
-                    onChange={handleChange} // Tidak perlu reset anak lagi
+                    onChange={handleChange}
                     disabled={!formData.district_id || loadVill}
                     required
                   >
@@ -306,12 +267,8 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     ))}
                   </select>
                 </div>
-
-                {/* --- DETAIL ALAMAT --- */}
                 <div className='col-12'>
-                  <label className='form-label fw-bold'>
-                    Alamat Lengkap (Jalan, RT/RW, No. Rumah)
-                  </label>
+                  <label className='form-label fw-bold'>Alamat Lengkap</label>
                   <textarea
                     name='detail'
                     className='form-control'
@@ -321,8 +278,6 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
                     required
                   ></textarea>
                 </div>
-
-                {/* --- IS PRIMARY --- */}
                 <div className='col-12'>
                   <div className='form-check'>
                     <input
@@ -374,7 +329,8 @@ const ModalAddress = ({ show, onClose, initialData, userDefaultName }) => {
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body // <--- 3. RENDER KE BODY
   );
 };
 

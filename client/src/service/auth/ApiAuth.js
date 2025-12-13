@@ -43,6 +43,29 @@ export const ApiAuth = createApi({
       }),
       invalidatesTags: ["Auth"],
     }),
+    updateProfile: builder.mutation({
+      query: (body) => ({
+        url: "/update-profile",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
+    forgotPassword: builder.mutation({
+      query: (body) => ({
+        url: "/forgot-password", // Sesuai route backend
+        method: "POST",
+        body,
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: (body) => ({
+        url: "/reset-password", // Sesuai route backend
+        method: "PUT",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -52,4 +75,7 @@ export const {
   useDoSigninMutation,
   useLoadUserQuery,
   useDoLogoutMutation,
+  useUpdateProfileMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
 } = ApiAuth;

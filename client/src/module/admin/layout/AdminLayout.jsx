@@ -87,7 +87,7 @@ const AdminLayout = ({ children, title }) => {
           aria-labelledby='dropdownUser1'
         >
           <li>
-            <Link className='dropdown-item' to='/profile'>
+            <Link className='dropdown-item' to='/admin-config'>
               Profile
             </Link>
           </li>

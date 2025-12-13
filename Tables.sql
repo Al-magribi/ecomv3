@@ -99,9 +99,13 @@ CREATE TABLE users (
     activation_expires TIMESTAMP,
     is_active BOOLEAN DEFAULT false,
     role VARCHAR(20) DEFAULT 'user',
+    reset_password_token VARCHAR(255),
+    reset_password_expires TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 -- 3. TABEL ADDRESSES (Buku Alamat User)
 CREATE TABLE addresses (

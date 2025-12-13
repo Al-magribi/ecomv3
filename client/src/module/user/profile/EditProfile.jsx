@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { useUpdateProfileMutation } from "../../../service/auth/ApiAuth";
+import { toast } from "react-toastify";
 
 const EditProfile = ({ show, onClose, user }) => {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    email: "",
     password: "", // Opsional jika user ingin ganti password
   });
+
+  const [updateProfile, { data, error, isLoading, isSuccess }] =
+    useUpdateProfileMutation();
 
   // Isi form saat modal dibuka
   useEffect(() => {
@@ -13,6 +19,7 @@ const EditProfile = ({ show, onClose, user }) => {
       setFormData({
         name: user.name || "",
         phone: user.phone || "",
+        email: user.email || "",
         password: "",
       });
     }
@@ -20,10 +27,21 @@ const EditProfile = ({ show, onClose, user }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Logic API update user disini
-    alert("Simpan Profile: " + JSON.stringify(formData));
-    onClose();
+
+    updateProfile(formData);
   };
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(data.message);
+
+      onClose();
+    }
+
+    if (error) {
+      toast.error(error.data.message);
+    }
+  }, [data, error, isSuccess]);
 
   if (!show) return null;
 
@@ -64,6 +82,17 @@ const EditProfile = ({ show, onClose, user }) => {
                   value={formData.phone}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
+                  }
+                />
+              </div>
+              <div className='mb-3'>
+                <label className='form-label'>Email</label>
+                <input
+                  type='email'
+                  className='form-control'
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
                   }
                 />
               </div>

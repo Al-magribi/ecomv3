@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { sendActivationEmail } from "../../utils/sendemail.js";
+import { sendActivationEmail, sendResetEmail } from "../../utils/sendemail.js";
 import { authorize } from "../../middleware/authorize.js";
 import { withTransaction, withQuery } from "../../utils/dbWrapper.js";
 
@@ -199,10 +199,158 @@ router.get(
   })
 );
 
-// --- 5. LOGOUT ---
+// --- 5. Update Profile ---
+router.put(
+  "/update-profile",
+  authorize("admin", "user"),
+  withTransaction(async (req, res, client) => {
+    // Kita ambil ID dari token (req.user.id) demi keamanan,
+    // agar user tidak bisa memanipulasi ID orang lain via body.
+    const userId = req.user.id;
+    const { name, phone, email, password } = req.body;
+
+    // 1. Validasi input wajib
+    if (!name || !email) {
+      return res.status(400).json({ message: "Nama dan Email wajib diisi!" });
+    }
+
+    // 2. Cek Unik Email
+    // (Jika email berubah, pastikan tidak dipakai user lain)
+    const emailCheck = await client.query(
+      `SELECT id FROM users WHERE email = $1 AND id != $2`,
+      [email, userId]
+    );
+
+    if (emailCheck.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "Email sudah digunakan oleh pengguna lain!" });
+    }
+
+    // 3. Logic Update (Dengan atau Tanpa Ganti Password)
+    if (password && password.trim() !== "") {
+      // Jika password diisi, hash password baru
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      await client.query(
+        `UPDATE users 
+         SET name = $1, phone = $2, email = $3, password = $4 
+         WHERE id = $5`,
+        [name, phone, email, hashedPassword, userId]
+      );
+    } else {
+      // Jika password kosong, update data diri saja
+      await client.query(
+        `UPDATE users 
+         SET name = $1, phone = $2, email = $3 
+         WHERE id = $4`,
+        [name, phone, email, userId]
+      );
+    }
+
+    // 4. Ambil data user terbaru untuk dikembalikan (Opsional, tapi good practice)
+    // Redux Query tag 'Auth' akan invalid, jadi frontend otomatis fetch ulang load-user.
+    // Namun kita tetap perlu return message agar toast di frontend muncul.
+
+    res.status(200).json({ message: "Profil berhasil diperbarui!" });
+  })
+);
+
+// --- 6. LOGOUT ---
 router.post("/logout", (req, res) => {
   res.clearCookie("token");
   res.status(200).json({ message: "Logout berhasil" });
 });
+
+// --- 7. FORGOT PASSWORD (REQUEST LINK) ---
+router.post(
+  "/forgot-password",
+  withTransaction(async (req, res, client) => {
+    const { email } = req.body;
+
+    // 1. Cek user
+    const check = await client.query(
+      "SELECT id, name FROM users WHERE email = $1 AND is_active = true",
+      [email]
+    );
+
+    if (check.rows.length === 0) {
+      // Return 200 palsu agar tidak bocor info email valid/tidak (security best practice)
+      // atau return 404 jika ingin eksplisit (tapi kurang aman)
+      return res.status(200).json({
+        message: "Jika email terdaftar, link reset password akan dikirim.",
+      });
+    }
+
+    const user = check.rows[0];
+
+    // 2. Generate Token & Expiry (1 Jam)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetExpires = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 jam
+
+    // 3. Simpan ke DB
+    await client.query(
+      `UPDATE users SET reset_password_token = $1, reset_password_expires = $2 WHERE id = $3`,
+      [resetToken, resetExpires, user.id]
+    );
+
+    // 4. Ambil Config Domain untuk Link
+    const configResult = await client.query(
+      `SELECT value FROM configurations WHERE key = 'domain'`
+    );
+    const domain = configResult.rows[0].value;
+
+    // Link mengarah ke Frontend: /reset-password?token=xxxx
+    const resetLink = `${domain}/reset-password?token=${resetToken}`;
+
+    // 5. Kirim Email
+    await sendResetEmail(email, user.name, resetLink);
+
+    res.status(200).json({
+      message: "Jika email terdaftar, link reset password akan dikirim.",
+    });
+  })
+);
+
+// --- 8. RESET PASSWORD (SUBMIT NEW PASSWORD) ---
+router.put(
+  "/reset-password",
+  withTransaction(async (req, res, client) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Data tidak lengkap." });
+    }
+
+    // 1. Validasi Token & Expiry
+    const check = await client.query(
+      `SELECT id FROM users 
+       WHERE reset_password_token = $1 
+       AND reset_password_expires > NOW()`,
+      [token]
+    );
+
+    if (check.rows.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Token tidak valid atau sudah kadaluarsa." });
+    }
+
+    const userId = check.rows[0].id;
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    // 2. Update Password & Hapus Token
+    await client.query(
+      `UPDATE users 
+       SET password = $1, reset_password_token = NULL, reset_password_expires = NULL 
+       WHERE id = $2`,
+      [hashed, userId]
+    );
+
+    res
+      .status(200)
+      .json({ message: "Password berhasil diubah. Silakan login." });
+  })
+);
 
 export default router;
